@@ -259,12 +259,12 @@ patient input -> normalisation -> structured extraction -> evidence store
 |---|---|---|
 | 0 | Forensics, architecture, ADRs, toolchain | PARTIALLY IMPLEMENTED — architecture documents mix planned and implemented behavior |
 | 1 | Foundation: monorepo, DB, migrations, auth, RBAC, config, logging, errors | PARTIALLY IMPLEMENTED — SQLite API builds; foundation verification in progress |
-| 2 | Kiosk, identity, consent, localisation | PARTIALLY IMPLEMENTED — localisation exists; lifecycle and kiosk continuation in progress |
-| 3 | Interview engine, SOCRATES, ontology, adaptive questioning | PARTIALLY IMPLEMENTED — domain vocabulary/pathways exist, interview runtime absent |
+| 2 | Kiosk, identity, consent, localisation | COMPLETE — device sessions, synthetic identity, granular consent engine, patient kiosk UI (committed `0a4a28e`) |
+| 3 | Interview engine, SOCRATES, ontology, adaptive questioning | COMPLETE — deterministic runtime (`@medikiosk/interview-engine`), encounter/interview API, evidence generation, golden journey test (2026-09-18) |
 | 4 | Voice: ASR/TTS abstraction + touch fallback | PLANNED |
 | 5 | Document intelligence: OCR, extraction, human verification | PLANNED |
 | 6 | Vitals, evidence graph, longitudinal timeline | PARTIALLY IMPLEMENTED — schema and synthetic seed, no runtime workflow |
-| 7 | Safety engine, red flags, triage, queue | PARTIALLY IMPLEMENTED — deterministic rules package, no queue runtime |
+| 7 | Safety engine, red flags, triage, queue | PARTIALLY IMPLEMENTED — deterministic rules engine (43 rules, tested) + submit-time triage assessment + queue entry created; no physician-facing queue UI |
 | 8 | AI synthesis, SOAP, evidence grounding, contradictions | PLANNED |
 | 9 | Physician console, review + verification audit | PLANNED |
 | 10 | AYUSH / Dashavidha Pariksha | PARTIALLY IMPLEMENTED — ontology only |

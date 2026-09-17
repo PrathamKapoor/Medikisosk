@@ -249,10 +249,35 @@ Response `200 { "status": "READY_FOR_REVIEW", "triageLevel": "RED", "queueEntryI
 Errors: `409 ENCOUNTER_ALREADY_SUBMITTED`.
 Side effects: runs the deterministic safety engine, creates or updates the triage queue entry, and
 enqueues FHIR generation into the sync outbox. Audit: `ENCOUNTER_SUBMITTED`, `TRIAGE_TRIGGERED`.
+> **Phase 3:** the implemented response is `{ status:'READY_FOR_REVIEW', triageLevel, priority,
+> queueEntryId, incomplete, outstandingRequired }`. The FHIR-outbox enqueue is `PLANNED` (no
+> FHIR layer exists yet); the queue entry IS created (priority from the triage level, status
+> `WAITING`). `GET /encounters/:encounterId` is implemented for the kiosk owner and for staff
+> with `patient.read`.
 
 ---
 
 ## 7. Interview
+
+> **Phase 3 implementation notes (2026-09-18).** Endpoints `GET …/interview/next`,
+> `POST …/interview/response`, `POST …/interview/finish`, `POST …/interview/language` and
+> `POST /encounters/:id/submit` are implemented by the deterministic interview runtime
+> (`packages/interview-engine` + `services/api/src/interview`). Deviations from this section's
+> example shapes, all implemented:
+> - `next` response `progress` carries `activeCount` and `requiredClosed/requiredTotal` plus
+>   `socratesRequiredRatio`; `remainingEstimate` from the example is **not** emitted.
+> - `next` and `response` responses additionally include `completion`
+>   (`{status, outstandingRequired, outstandingReason, canFinishAnyway, maxQuestionsReached}`),
+>   `safetyStatus` (`GREEN`/`AMBER`/`RED`/`NOT_EVALUATED`), `requiresHumanReview` and
+>   `rationale` (the selector's deterministic reason).
+> - `response` accepts `state` ∈ `ANSWERED|SKIPPED|DECLINED|UNKNOWN|NOT_APPLICABLE` (default
+>   `ANSWERED`); the server recomputes normalisation and stores `hintMismatch` when the supplied
+>   `normalisedAnswer` disagrees. `DECLINED`/`UNKNOWN` are terminal (evidence row created,
+>   never coerced to "no"); `SKIPPED` keeps the question re-askable while below its ask budget.
+> - `submit` returns `{status:'READY_FOR_REVIEW', triageLevel, priority, queueEntryId,
+>   incomplete, outstandingRequired}`; it runs the final deterministic triage, creates the queue
+>   entry, and transitions encounter → `SUBMITTED` + interview session → `COMPLETED`. FHIR
+>   outbox enqueue remains `PLANNED`.
 
 ### `GET /api/v1/encounters/:encounterId/interview/next`
 Authorisation: `encounter.read`. Returns the question the engine has selected, with the reason it was

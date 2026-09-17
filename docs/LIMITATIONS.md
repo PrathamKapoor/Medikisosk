@@ -305,3 +305,18 @@ named in the debt register, not yet in code. Any vitals value in a demonstration
 mock provider or from manual entry, and must be labelled as such.
 
 <!-- MEDIKIOSK-APPEND -->
+
+---
+
+## 12. Phase 3 — interview runtime status (2026-09-18)
+
+| Capability | Status |
+|---|---|
+| Deterministic interview engine (`@medikiosk/interview-engine`): selection, branching, kind-aware normalisation, completion, per-pathway budgets, escalation advisories | `IMPLEMENTED` (27 unit tests; deterministic by construction, no LLM) |
+| Encounter + interview API (`services/api/src/interview`): create, next, response, finish, language, submit | `IMPLEMENTED` (golden journey: chest pain + dyspnoea ⇒ RED/CHEST_PAIN_HIGH_RISK_001, EMERGENCY queue; security tests: cross-session 404, expiry, consent revoke, wrong-question errors, replay) |
+| Evidence spine: response → evidence row → symptom/condition/medication/allergy facts with SOCRATES slots | `IMPLEMENTED` for `PATIENT_REPORTED` only; `DOCUMENT_DERIVED`, `VITAL_DERIVED`, `AI_DERIVED` remain `PLANNED` (no faked sources) |
+| Triage integration: `evaluateTriage(DEFAULT_RULES)` at every fact change + submit, assessment rows, queue entry | `IMPLEMENTED` (rule set remains a curated starter set — safety net, not guarantee; no clinical validation) |
+| Historical pathway replay | `PARTIALLY IMPLEMENTED` — each encounter records `pathwayVersion` + pathway keys; only the current registry version exists as data, so re-interpreting an encounter against an older version is `PLANNED` |
+| SOCRATES profiles | Only chest pain has a profile today; other complaints impose no SOCRATES completion requirement (data addition, not engine change) |
+| Voice/ASR, OCR, LLM summarisation in the interview | `PLANNED` — they attach to the same evidence spine later; the interview works entirely without them |
+| `completion.status === 'COMPLETE'` reachable end-to-end | Yes — golden journey (chest pain + dyspnoea, respiratory + general history answered) terminates with COMPLETE; INCOMPLETE is reported honestly when a patient declines/skips required questions (submission is never blocked) |

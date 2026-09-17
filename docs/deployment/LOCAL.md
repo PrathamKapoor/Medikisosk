@@ -46,9 +46,29 @@ Open `http://localhost:5173`. Vite proxies `/api` to `http://127.0.0.1:8080`; se
 
 Base seed staff: hospital `demo-hospital`, accounts `dr.rao`, `nurse.mehta`, `triage.desk`, `admin.patil`; synthetic password `demo-pass-1234`. Demo kiosk token: `dev-kiosk-token-opd-a-2-replace-me`. Obtain the kiosk id from the seed output or the local `kiosks` table; it is generated per database.
 
+## Interview smoke
+
+Phase 3 makes the kiosk drive a real clinical interview after consent:
+
+1. On the saved-receipt screen choose **Begin clinical interview** — the app `POST`s the
+   encounter and renders whatever `GET …/interview/next` returns (the UI never decides
+   branching). For a demo patient who reported "chest pain", the first question is
+   `q.chest_pain.safety_dyspnoea`; otherwise answer whatever the runtime asks.
+2. Answer via touch cards / yes-no / text; a priority banner appears when `safetyStatus` is
+   amber/red or human review is required (never a diagnosis — staff routing only).
+3. Submit when the interview ends → `READY_FOR_REVIEW` with the triage level; finish clears the
+   screen. An incomplete interview (declined/skipped questions) still submits and reports the
+   outstanding list.
+
+The interview works with no network and no AI: it is deterministic domain logic persisted in
+SQLite. See `docs/interview/DOMAIN.md`.
+
 ## Expected boundary
 
-Registration and consent are distinct from clinical intake. Do not present a saved consent receipt as a completed interview or physician case. Finishing clears patient-facing session state while retaining consent/audit and clinical records under server retention policy. Reload behavior, inactivity policy and any operational limitations are recorded in the phase report.
+Registration, consent and interview do not replace the physician. Finishing clears
+patient-facing session state while retaining consent/audit and clinical records under server
+retention policy. Reload behavior, inactivity policy and operational limitations are recorded in
+the phase report.
 
 ## Verification
 
