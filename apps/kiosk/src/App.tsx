@@ -17,17 +17,77 @@ import {
   type Identity,
   type Session,
   type SessionState,
+  type SubmitResult,
 } from "./api";
 import { ConsentForm, Receipt } from "./Consent";
+import { Interview } from "./Interview";
 
-type Screen = "welcome" | "identity" | "consent" | "receipt";
-const stages: Screen[] = ["welcome", "identity", "consent", "receipt"];
+type Screen =
+  "welcome" | "identity" | "consent" | "receipt" | "interview" | "result";
+const stages: Screen[] = [
+  "welcome",
+  "identity",
+  "consent",
+  "receipt",
+  "interview",
+];
 const titleKeys: Record<Screen, string> = {
   welcome: "kiosk.welcome.title",
   identity: "registration.identity",
   consent: "registration.consent",
   receipt: "registration.receipt",
+  interview: "interview.title",
+  result: "interview.submitted",
 };
+
+type ResultTranslate = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
+/** Post-submit triage outcome rendered in patient-safe wording (never a diagnosis). */
+function ResultScreen({
+  result,
+  t,
+  onFinish,
+}: {
+  result: SubmitResult;
+  t: ResultTranslate;
+  onFinish: () => void;
+}) {
+  const red = result.triageLevel === "RED";
+  const messageKey =
+    result.triageLevel === "RED"
+      ? "interview.red"
+      : result.triageLevel === "AMBER"
+        ? "interview.amber"
+        : "interview.green";
+  return (
+    <div className="result-screen">
+      <div className={`notice ${red ? "priority" : "success"}`} role="status">
+        <h2>
+          {red ? t("interview.review_required") : t("interview.submitted")}
+        </h2>
+        <p>{t(messageKey)}</p>
+        {red ? (
+          <button className="primary" onClick={onFinish}>
+            {t("triage.red.action")}
+          </button>
+        ) : null}
+      </div>
+      <div className="actions">
+        {!red ? (
+          <button className="primary" onClick={onFinish}>
+            {t("interview.finish")}
+          </button>
+        ) : null}
+        {red ? (
+          <button onClick={onFinish}>{t("interview.finish")}</button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 function Provisioning({ onReady }: { onReady: (device: Device) => void }) {
   const [id, setId] = useState("");
@@ -92,6 +152,7 @@ export default function App() {
   const [otp, setOtp] = useState("");
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [receipt, setReceipt] = useState<ConsentRecord | null>(null);
+  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -140,6 +201,7 @@ export default function App() {
     setChallenge(null);
     setOtp("");
     setReceipt(null);
+    setSubmitResult(null);
     setDecisions([]);
     setScreen("welcome");
     setBusy(false);
@@ -678,20 +740,53 @@ export default function App() {
             {screen === "receipt" && receipt ? (
               <>
                 <Receipt record={receipt} t={t} locale={locale} />
+                {receipt.stopRequired && !receipt.revokedAt ? (
+                  <p className="notice" role="status">
+                    {t("interview.consent_required_notice")}
+                  </p>
+                ) : null}
                 <div className="actions">
-                  <button
-                    className="primary"
-                    onClick={() => clearPatient("registration.cleared")}
-                  >
-                    {t("registration.finish")}
-                  </button>
+                  {!receipt.revokedAt && !receipt.stopRequired ? (
+                    <button
+                      className="primary"
+                      disabled={busy || offline}
+                      onClick={() => setScreen("interview")}
+                    >
+                      {t("interview.start")}
+                      <span aria-hidden="true"> →</span>
+                    </button>
+                  ) : null}
                   {!receipt.revokedAt ? (
                     <button disabled={busy || offline} onClick={revoke}>
                       {t("consent.revoke")}
                     </button>
                   ) : null}
+                  <button onClick={() => clearPatient("registration.cleared")}>
+                    {t("registration.finish")}
+                  </button>
                 </div>
               </>
+            ) : null}
+            {screen === "interview" && session && identity ? (
+              <Interview
+                session={session}
+                patientId={identity.patientId}
+                locale={locale}
+                t={t}
+                api={api.current}
+                onExpired={() => clearPatient("registration.expired")}
+                onSubmitted={(result) => {
+                  setSubmitResult(result);
+                  setScreen("result");
+                }}
+              />
+            ) : null}
+            {screen === "result" && submitResult ? (
+              <ResultScreen
+                result={submitResult}
+                t={t}
+                onFinish={() => clearPatient("registration.cleared")}
+              />
             ) : null}
           </main>
         </div>

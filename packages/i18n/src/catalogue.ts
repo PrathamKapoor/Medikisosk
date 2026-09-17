@@ -1,6 +1,7 @@
 import type { Catalogue, LocaleCode } from "./types";
 import { LOCALE_CODES } from "./types";
 import { REGISTRATION_CATALOGUES } from "./registration";
+import { INTERVIEW_CATALOGUES } from "./interview";
 
 import { enIN } from "./locales/en-IN";
 import { hiIN } from "./locales/hi-IN";
@@ -19,9 +20,21 @@ import { knIN } from "./locales/kn-IN";
  * than a silent runtime fallback to English at the bedside.
  */
 export const CATALOGUES: Record<LocaleCode, Catalogue> = {
-  "en-IN": { ...enIN, ...REGISTRATION_CATALOGUES["en-IN"] },
-  "hi-IN": { ...hiIN, ...REGISTRATION_CATALOGUES["hi-IN"] },
-  "mr-IN": { ...mrIN, ...REGISTRATION_CATALOGUES["mr-IN"] },
+  "en-IN": {
+    ...enIN,
+    ...REGISTRATION_CATALOGUES["en-IN"],
+    ...INTERVIEW_CATALOGUES["en-IN"],
+  },
+  "hi-IN": {
+    ...hiIN,
+    ...REGISTRATION_CATALOGUES["hi-IN"],
+    ...INTERVIEW_CATALOGUES["hi-IN"],
+  },
+  "mr-IN": {
+    ...mrIN,
+    ...REGISTRATION_CATALOGUES["mr-IN"],
+    ...INTERVIEW_CATALOGUES["mr-IN"],
+  },
   "gu-IN": guIN,
   "ta-IN": taIN,
   "te-IN": teIN,

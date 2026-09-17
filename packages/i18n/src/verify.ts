@@ -92,9 +92,13 @@ export function verifyAllLocales(): VerifyResult {
     const keys = Object.keys(catalogue);
 
     // --- hard check: completeness against English -------------------------
-    // Registration is intentionally unavailable without a full consent-language flow.
+    // Registration/interview are intentionally unavailable without a full
+    // consent-language flow, so their keys are optional for locales that only
+    // carry the base (browseable) catalogue.
     const missing = missingKeys(locale).filter(
-      (key) => isRegistrationLocale(locale) || !key.startsWith("registration."),
+      (key) =>
+        isRegistrationLocale(locale) ||
+        (!key.startsWith("registration.") && !key.startsWith("interview.")),
     );
     if (missing.length > 0) {
       fail(

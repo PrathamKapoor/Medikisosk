@@ -67,6 +67,91 @@ export interface SessionState {
   step: string;
   consent?: ConsentRecord;
 }
+export interface Encounter {
+  encounterId: string;
+  status: string;
+  activePathways: string[];
+  interviewSessionId: string;
+}
+export interface QuestionOption {
+  key: string;
+  conceptCodes?: readonly string[];
+  severity?: string;
+}
+export interface Question {
+  key: string;
+  kind:
+    | "YES_NO"
+    | "SINGLE_CHOICE"
+    | "MULTI_CHOICE"
+    | "FREE_TEXT"
+    | "SEVERITY"
+    | "BODY_SITE"
+    | "DURATION"
+    | "NUMBER"
+    | "DATE"
+    | "DOCUMENT_UPLOAD"
+    | "INSTRUCTION";
+  category: string;
+  pathwayKey: string;
+  promptKey: string;
+  options: QuestionOption[];
+  socratesDimensions: readonly string[];
+  rationale: string;
+  required: boolean;
+  askCount: number;
+}
+export interface ProgressView {
+  asked: number;
+  activeCount: number;
+  requiredClosed: number;
+  requiredTotal: number;
+  socratesRequiredRatio: number;
+}
+export interface CompletionView {
+  status:
+    | "IN_PROGRESS"
+    | "COMPLETE"
+    | "INCOMPLETE"
+    | "NEEDS_CLARIFICATION"
+    | "SAFETY_ESCALATION";
+  outstandingRequired: readonly string[];
+  outstandingReason: Readonly<Record<string, string>>;
+  canFinishAnyway: boolean;
+  maxQuestionsReached: boolean;
+}
+export interface NextResult {
+  question: Question | null;
+  progress: ProgressView;
+  completion: CompletionView;
+  safetyStatus: "GREEN" | "AMBER" | "RED" | "NOT_EVALUATED";
+  requiresHumanReview: boolean;
+  rationale: string | null;
+}
+export interface Advisory {
+  key: string;
+  advisory: string;
+}
+export interface ResponseResult {
+  responseId: string;
+  evidenceIds: string[];
+  advisories: Advisory[];
+  nextQuestionKey: string | null;
+  normalisationAgreed: boolean;
+  state: string;
+  progress: ProgressView;
+  completion: CompletionView;
+  safetyStatus: string;
+  requiresHumanReview: boolean;
+}
+export interface SubmitResult {
+  status: string;
+  triageLevel: string;
+  priority: string;
+  queueEntryId: string;
+  incomplete: boolean;
+  outstandingRequired: string[];
+}
 export class ApiError extends Error {
   constructor(
     public readonly code: string,
@@ -138,5 +223,71 @@ export class KioskApi {
       window.clearTimeout(timeout);
       this.controllers.delete(controller);
     }
+  }
+
+  /** POST /api/v1/encounters — open an OPD encounter for the interview. */
+  async createEncounter(args: {
+    sessionId: string;
+    token: string;
+    patientId: string;
+    locale: string;
+    chiefComplaintCodes: string[];
+    chiefComplaintVerbatim?: string;
+  }): Promise<Encounter> {
+    return this.request<Encounter>("/encounters", {
+      method: "POST",
+      token: args.token,
+      body: {
+        patientId: args.patientId,
+        sessionId: args.sessionId,
+        encounterType: "OPD",
+        chiefComplaintCodes: args.chiefComplaintCodes,
+        chiefComplaintVerbatim: args.chiefComplaintVerbatim,
+        locale: args.locale,
+      },
+    });
+  }
+
+  /** GET /api/v1/encounters/:id/interview/next — the engine decides the next question. */
+  async nextQuestion(encounterId: string, token: string): Promise<NextResult> {
+    return this.request<NextResult>(
+      `/encounters/${encounterId}/interview/next`,
+      { token },
+    );
+  }
+
+  /** POST /api/v1/encounters/:id/interview/response — record a touch answer. */
+  async respond(args: {
+    encounterId: string;
+    token: string;
+    questionKey: string;
+    state?: "ANSWERED" | "SKIPPED" | "DECLINED" | "UNKNOWN" | "NOT_APPLICABLE";
+    rawAnswer?: string;
+  }): Promise<ResponseResult> {
+    return this.request<ResponseResult>(
+      `/encounters/${args.encounterId}/interview/response`,
+      {
+        method: "POST",
+        token: args.token,
+        body: {
+          questionKey: args.questionKey,
+          state: args.state ?? "ANSWERED",
+          rawAnswer: args.rawAnswer,
+          modality: "TOUCH",
+        },
+      },
+    );
+  }
+
+  /** POST /api/v1/encounters/:id/submit — finish and queue the encounter. */
+  async submitEncounter(
+    encounterId: string,
+    token: string,
+  ): Promise<SubmitResult> {
+    return this.request<SubmitResult>(`/encounters/${encounterId}/submit`, {
+      method: "POST",
+      token,
+      body: {},
+    });
   }
 }
