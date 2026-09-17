@@ -1,0 +1,41 @@
+{
+  "name": "medikiosk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MediKiosk — AI-powered multimodal clinical intake and patient case-taking platform",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md,css}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "npm run db:migrate --workspace @medikiosk/api",
+    "db:seed": "npm run db:seed --workspace @medikiosk/api",
+    "seed:demo": "npm run db:seed --workspace @medikiosk/api -- --profile demo",
+    "evaluate": "node --import tsx evaluation/run.ts",
+    "demo:up": "node scripts/demo-up.mjs",
+    "dev:api": "npm run dev --workspace @medikiosk/api",
+    "dev:kiosk": "npm run dev --workspace @medikiosk/kiosk",
+    "dev:console": "npm run dev --workspace @medikiosk/console"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

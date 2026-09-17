@@ -1,0 +1,113 @@
+/**
+ * Symptom vocabulary — respiratory infection, ENT and systemic presentations.
+ */
+
+import type { ClinicalConcept } from '../concept';
+import { symptom } from './symptoms-cardiorespiratory';
+
+export const RESPIRATORY_AND_SYSTEMIC_SYMPTOMS: readonly ClinicalConcept[] = [
+  symptom(
+    'MK-SYM-007',
+    'Cough',
+    'RESPIRATORY',
+    ['cough', 'coughing', 'dry cough', 'wet cough', 'productive cough', 'khaansi', 'khansi', 'खांसी', 'खोकला', 'ઉધરસ', 'இருமல்', 'దగ్గు', 'কাশি'],
+    { pathways: ['PATH-RESPIRATORY'] },
+  ),
+  symptom(
+    'MK-SYM-008',
+    'Coughing blood',
+    'RESPIRATORY',
+    ['coughing blood', 'blood in sputum', 'haemoptysis', 'hemoptysis', 'khoon wali khaansi', 'खून वाली खांसी', 'रक्तमय खोकला'],
+    { pathways: ['PATH-RESPIRATORY'], redFlagRelevant: true, potentiallyEmergent: true },
+  ),
+  symptom(
+    'MK-SYM-009',
+    'Wheezing',
+    'RESPIRATORY',
+    ['wheezing', 'whistling breathing', 'noisy breathing', 'saans mein seeti', 'सांस में सीटी की आवाज़'],
+    { pathways: ['PATH-RESPIRATORY'] },
+  ),
+  symptom(
+    'MK-SYM-010',
+    'Sore throat',
+    'ENT',
+    ['sore throat', 'throat pain', 'painful swallowing', 'gala dard', 'gale mein dard', 'गले में दर्द', 'घसा दुखणे', 'ગળામાં દુખાવો'],
+    { pathways: ['PATH-FEVER', 'PATH-RESPIRATORY'] },
+  ),
+  symptom(
+    'MK-SYM-011',
+    'Runny or blocked nose',
+    'ENT',
+    ['runny nose', 'blocked nose', 'nasal congestion', 'sneezing', 'naak behna', 'naak band', 'नाक बहना', 'नाक बंद'],
+    { pathways: ['PATH-FEVER', 'PATH-RESPIRATORY'] },
+  ),
+  symptom(
+    'MK-SYM-020',
+    'Fever',
+    'GENERAL',
+    [
+      'fever',
+      'high temperature',
+      'high fever',
+      'temperature',
+      'bukhar',
+      'bukhaar',
+      'बुखार',
+      'ताप',
+      'તાવ',
+      'காய்ச்சல்',
+      'జ్వరం',
+      'জ্বর',
+    ],
+    { pathways: ['PATH-FEVER'], redFlagRelevant: true },
+  ),
+  symptom(
+    'MK-SYM-021',
+    'Chills or rigors',
+    'GENERAL',
+    ['chills', 'shivering', 'rigors', 'feeling cold', 'thand lagna', 'kapkapi', 'ठंड लगना', 'कंपकंपी', 'हुडहुडी'],
+    { pathways: ['PATH-FEVER'], redFlagRelevant: true },
+  ),
+  symptom(
+    'MK-SYM-022',
+    'Fatigue or weakness',
+    'GENERAL',
+    ['fatigue', 'tiredness', 'weakness', 'lethargy', 'no energy', 'kamzori', 'thakan', 'कमज़ोरी', 'थकान', 'अशक्तपणा'],
+    { pathways: ['PATH-FEVER', 'PATH-CHRONIC-DISEASE'] },
+  ),
+  symptom(
+    'MK-SYM-023',
+    'Loss of appetite',
+    'GASTROINTESTINAL',
+    ['loss of appetite', 'not eating', 'reduced appetite', 'bhookh nahi lagti', 'bhukh na lagna', 'भूख नहीं लगती', 'भूक न लागणे'],
+    { pathways: ['PATH-FEVER', 'PATH-ABDOMINAL-PAIN'] },
+  ),
+  symptom(
+    'MK-SYM-024',
+    'Weight loss',
+    'GENERAL',
+    ['weight loss', 'losing weight', 'lost weight', 'vajan kam ho gaya', 'वज़न कम होना', 'वजन कमी'],
+    { pathways: ['PATH-CHRONIC-DISEASE'], redFlagRelevant: true },
+  ),
+  symptom(
+    'MK-SYM-025',
+    'Night sweats',
+    'GENERAL',
+    ['night sweats', 'sweating at night', 'raat mein pasina', 'रात में पसीना', 'रात्री घाम'],
+    { pathways: ['PATH-FEVER'], redFlagRelevant: true },
+  ),
+  symptom(
+    'MK-SYM-026',
+    'Dizziness',
+    'NEUROLOGICAL',
+    ['dizziness', 'giddiness', 'light headed', 'vertigo', 'spinning', 'chakkar', 'sir ghoomna', 'चक्कर', 'सिर घूमना', 'चक्कर येणे'],
+    { pathways: ['PATH-HEADACHE'], redFlagRelevant: true },
+  ),
+  symptom(
+    'MK-SYM-027',
+    'Recurrent infections',
+    'GENERAL',
+    ['repeated infections', 'recurrent fever', 'frequent infections', 'baar baar bukhar', 'बार बार बुखार'],
+    { pathways: ['PATH-CHRONIC-DISEASE'], redFlagRelevant: true },
+  ),
+];

@@ -1,0 +1,21 @@
+{
+  "name": "@medikiosk/safety-rules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic red-flag rule catalogue and rule engine. Never uses a language model.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@medikiosk/clinical-schema": "*",
+    "@medikiosk/shared-types": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

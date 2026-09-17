@@ -1,0 +1,22 @@
+{
+  "name": "@medikiosk/fhir-models",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FHIR R4 mapping from the canonical clinical model, plus a self-implemented validator.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@medikiosk/clinical-schema": "*",
+    "@medikiosk/evidence-model": "*",
+    "@medikiosk/shared-types": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@medikiosk/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-cutting primitives: identifiers, provenance enums, results, typed errors.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
