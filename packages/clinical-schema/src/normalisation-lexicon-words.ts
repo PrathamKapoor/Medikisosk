@@ -6,7 +6,7 @@
  * exactly these lists.
  */
 
-import type { SeverityScale } from './primitives';
+import type { SeverityScale } from "./primitives";
 
 /**
  * Severity expressions, most specific first.
@@ -19,28 +19,49 @@ export const SEVERITY_WORDS: readonly {
   readonly severity: SeverityScale;
 }[] = [
   {
-    words: ['unbearable', 'worst ever', 'as bad as it could be', 'bahut bahut zyada', 'असहनीय'],
-    severity: 'VERY_SEVERE',
+    words: [
+      "unbearable",
+      "worst ever",
+      "as bad as it could be",
+      "bahut bahut zyada",
+      "असहनीय",
+    ],
+    severity: "VERY_SEVERE",
   },
   {
     words: [
-      'very severe',
-      'extremely severe',
-      'bahut zyada',
-      'bahut tez',
-      'बहुत ज़्यादा',
-      'बहुत तेज़',
-      'प्रचंड',
+      "very severe",
+      "extremely severe",
+      "bahut zyada",
+      "bahut tez",
+      "बहुत ज़्यादा",
+      "बहुत तेज़",
+      "प्रचंड",
     ],
-    severity: 'VERY_SEVERE',
+    severity: "VERY_SEVERE",
   },
-  { words: ['severe', 'intense', 'tez', 'teevr', 'तेज़', 'तीव्र', 'गंभीर'], severity: 'SEVERE' },
-  { words: ['moderate', 'medium', 'madhyam', 'मध्यम'], severity: 'MODERATE' },
   {
-    words: ['mild', 'slight', 'a little', 'little', 'thoda', 'thodi', 'हल्का', 'थोड़ा'],
-    severity: 'MILD',
+    words: ["severe", "intense", "tez", "teevr", "तेज़", "तीव्र", "गंभीर"],
+    severity: "SEVERE",
   },
-  { words: ['no pain', 'no problem', 'nothing at all', 'दर्द नहीं', 'कुछ नहीं'], severity: 'NONE' },
+  { words: ["moderate", "medium", "madhyam", "मध्यम"], severity: "MODERATE" },
+  {
+    words: [
+      "mild",
+      "slight",
+      "a little",
+      "little",
+      "thoda",
+      "thodi",
+      "हल्का",
+      "थोड़ा",
+    ],
+    severity: "MILD",
+  },
+  {
+    words: ["no pain", "no problem", "nothing at all", "दर्द नहीं", "कुछ नहीं"],
+    severity: "NONE",
+  },
 ];
 
 /**
@@ -50,41 +71,96 @@ export const SEVERITY_WORDS: readonly {
  * preserved rather than used to discard the answer.
  */
 export const NEGATION_WORDS: readonly string[] = [
-  'no', 'not', 'none', 'never', 'without', 'denies', 'absent', 'nil',
-  'nahi', 'nahin', 'bilkul nahi', 'koi nahi',
-  'नहीं', 'नही', 'बिल्कुल नहीं',
-  'नाही',
-  'નથી', 'ના',
-  'இல்லை', 'లేదు', 'নেই',
+  "no",
+  "not",
+  "none",
+  "never",
+  "without",
+  "denies",
+  "absent",
+  "nil",
+  "nahi",
+  "nahin",
+  "bilkul nahi",
+  "koi nahi",
+  "नहीं",
+  "नही",
+  "बिल्कुल नहीं",
+  "नाही",
+  "નથી",
+  "ના",
+  "இல்லை",
+  "లేదు",
+  "নেই",
 ];
 
 /** Uncertainty markers. These lower confidence rather than changing the finding. */
 export const UNCERTAINTY_WORDS: readonly string[] = [
-  'maybe', 'perhaps', 'not sure', 'unsure', 'i think', 'possibly', 'sometimes',
-  'dont know', "don't know", 'no idea',
-  'shayad', 'pata nahi', 'malum nahi', 'lagta hai',
-  'शायद', 'पता नहीं', 'लगता है',
-  'माहीत नाही',
-  'தெரியவில்லை', 'తెలియదు', 'জানি না',
+  "maybe",
+  "perhaps",
+  "not sure",
+  "unsure",
+  "i think",
+  "possibly",
+  "sometimes",
+  "dont know",
+  "don't know",
+  "no idea",
+  "shayad",
+  "pata nahi",
+  "malum nahi",
+  "lagta hai",
+  "शायद",
+  "पता नहीं",
+  "लगता है",
+  "माहीत नाही",
+  "தெரியவில்லை",
+  "తెలియదు",
+  "জানি না",
 ];
 
 /** Words marking a duration as approximate, so an imprecise report is not over-read. */
 export const APPROXIMATION_WORDS: readonly string[] = [
-  'about', 'around', 'approximately', 'almost', 'roughly', 'nearly',
-  'lagbhag', 'takriban', 'करीब', 'लगभग',
+  "about",
+  "around",
+  "approximately",
+  "almost",
+  "roughly",
+  "nearly",
+  "lagbhag",
+  "takriban",
+  "करीब",
+  "लगभग",
 ];
 
 /** Words placing an event in the past, combined with a duration ("3 days ago"). */
 export const PAST_MARKER_WORDS: readonly string[] = [
-  'ago', 'pehle', 'pahle', 'before', 'back', 'पहले', 'पूर्वी', 'પહેલા',
+  "ago",
+  "pehle",
+  "pahle",
+  "before",
+  "back",
+  "पहले",
+  "पूर्वी",
+  "પહેલા",
 ];
 
 /** Words indicating a confirmed, established diagnosis rather than a suspicion. */
 export const CONFIRMATION_WORDS: readonly string[] = [
-  'confirmed', 'diagnosed', 'definitely', 'certainly', 'pakka', 'निश्चित', 'निश्चितपणे',
+  "confirmed",
+  "diagnosed",
+  "definitely",
+  "certainly",
+  "pakka",
+  "निश्चित",
+  "निश्चितपणे",
 ];
 
 /** Words indicating a likely but unconfirmed condition. */
 export const PROBABILITY_WORDS: readonly string[] = [
-  'probably', 'likely', 'most likely', 'संभवतः', 'बहुधा',
+  "probably",
+  "likely",
+  "most likely",
+  "संभवतः",
+  "बहुधा",
 ];

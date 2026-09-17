@@ -6,5 +6,5 @@
  * are constructed from, so the declaration cannot drift from what is actually running.
  */
 
-export { capabilitiesFor } from './capabilities';
-export type { AppConfig } from './env';
+export { capabilitiesFor } from "./capabilities";
+export type { AppConfig } from "./env";

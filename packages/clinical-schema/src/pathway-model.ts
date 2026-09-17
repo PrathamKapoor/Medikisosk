@@ -6,9 +6,9 @@
  * the interview engine contains no complaint-specific logic. See ADR-008.
  */
 
-import { z } from 'zod';
-import type { PathwayQuestion } from './pathway';
-import type { TriggerExpression } from './trigger';
+import { z } from "zod";
+import type { PathwayQuestion } from "./pathway";
+import type { TriggerExpression } from "./trigger";
 
 export const completionCriteriaSchema = z.object({
   /** Fraction of *required* SOCRATES dimensions that must be closed for the complaint. */
@@ -106,7 +106,9 @@ export function findQuestion(
   questionKey: string,
 ): PathwayQuestion | undefined {
   for (const pathway of pathways) {
-    const found = pathway.questions.find((question) => question.key === questionKey);
+    const found = pathway.questions.find(
+      (question) => question.key === questionKey,
+    );
     if (found) return found;
   }
   return undefined;
@@ -119,21 +121,23 @@ export function findQuestion(
  * define, or that declares a completion criterion it can never satisfy, would otherwise surface as
  * a confusing patient-facing failure mid-interview. Failing fast at startup is the correct trade.
  */
-export function validatePathway(
-  pathway: InterviewPathway,
-): readonly string[] {
+export function validatePathway(pathway: InterviewPathway): readonly string[] {
   const problems: string[] = [];
   const defined = new Set<string>();
   for (const question of pathway.questions) {
     if (defined.has(question.key)) {
-      problems.push(`Pathway ${pathway.key}: duplicate question key ${question.key}`);
+      problems.push(
+        `Pathway ${pathway.key}: duplicate question key ${question.key}`,
+      );
     }
     defined.add(question.key);
   }
 
   for (const branch of pathway.branches) {
     if (branch.questionKeys.length === 0) {
-      problems.push(`Pathway ${pathway.key}: branch ${branch.key} has no questions`);
+      problems.push(
+        `Pathway ${pathway.key}: branch ${branch.key} has no questions`,
+      );
     }
     for (const key of branch.questionKeys) {
       if (!defined.has(key)) {
@@ -144,7 +148,9 @@ export function validatePathway(
     }
   }
 
-  const requiredCount = pathway.questions.filter((question) => question.required).length;
+  const requiredCount = pathway.questions.filter(
+    (question) => question.required,
+  ).length;
   if (requiredCount > pathway.completion.maxQuestions) {
     problems.push(
       `Pathway ${pathway.key}: ${requiredCount} required questions exceeds maxQuestions ${pathway.completion.maxQuestions}`,

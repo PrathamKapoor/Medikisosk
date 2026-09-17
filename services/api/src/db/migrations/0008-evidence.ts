@@ -11,69 +11,77 @@
  * bypassed by writing directly to the database.
  */
 
-import type { Kysely } from 'kysely';
+import type { Kysely } from "kysely";
 
 export const MIGRATION_0008_EVIDENCE = {
-  id: '0008_evidence',
+  id: "0008_evidence",
   async up(db: Kysely<unknown>): Promise<void> {
     const schema = db.schema;
 
     await schema
-      .createTable('evidence')
-      .addColumn('id', 'varchar(26)', (col) => col.primaryKey())
-      .addColumn('tenantId', 'varchar(26)', (col) => col.notNull().references('tenants.id'))
-      .addColumn('encounterId', 'varchar(26)', (col) => col.notNull().references('encounters.id'))
-      .addColumn('type', 'varchar(32)', (col) => col.notNull())
-      .addColumn('originClass', 'varchar(24)', (col) => col.notNull())
-      .addColumn('source', 'varchar(40)', (col) => col.notNull())
-      .addColumn('sourceRef', 'varchar(120)')
+      .createTable("evidence")
+      .addColumn("id", "varchar(26)", (col) => col.primaryKey())
+      .addColumn("tenantId", "varchar(26)", (col) =>
+        col.notNull().references("tenants.id"),
+      )
+      .addColumn("encounterId", "varchar(26)", (col) =>
+        col.notNull().references("encounters.id"),
+      )
+      .addColumn("type", "varchar(32)", (col) => col.notNull())
+      .addColumn("originClass", "varchar(24)", (col) => col.notNull())
+      .addColumn("source", "varchar(40)", (col) => col.notNull())
+      .addColumn("sourceRef", "varchar(120)")
       // Immutable. Corrections create a new row; they never overwrite this one.
-      .addColumn('rawValue', 'text')
-      .addColumn('normalisedJson', 'text')
-      .addColumn('confidence', 'double precision', (col) => col.notNull())
-      .addColumn('language', 'varchar(16)')
-      .addColumn('capturedAt', 'varchar(30)', (col) => col.notNull())
-      .addColumn('createdBy', 'varchar(26)')
-      .addColumn('verificationState', 'varchar(16)', (col) => col.notNull())
-      .addColumn('verifiedAt', 'varchar(30)')
-      .addColumn('verifiedBy', 'varchar(26)')
-      .addColumn('supersededBy', 'varchar(26)')
+      .addColumn("rawValue", "text")
+      .addColumn("normalisedJson", "text")
+      .addColumn("confidence", "double precision", (col) => col.notNull())
+      .addColumn("language", "varchar(16)")
+      .addColumn("capturedAt", "varchar(30)", (col) => col.notNull())
+      .addColumn("createdBy", "varchar(26)")
+      .addColumn("verificationState", "varchar(16)", (col) => col.notNull())
+      .addColumn("verifiedAt", "varchar(30)")
+      .addColumn("verifiedBy", "varchar(26)")
+      .addColumn("supersededBy", "varchar(26)")
       .execute();
 
     await schema
-      .createIndex('idx_evidence_encounter')
-      .on('evidence')
-      .columns(['tenantId', 'encounterId'])
+      .createIndex("idx_evidence_encounter")
+      .on("evidence")
+      .columns(["tenantId", "encounterId"])
       .execute();
 
     // The evidence trace looks rows up by the question key or document they came from.
     await schema
-      .createIndex('idx_evidence_source_ref')
-      .on('evidence')
-      .columns(['tenantId', 'sourceRef'])
+      .createIndex("idx_evidence_source_ref")
+      .on("evidence")
+      .columns(["tenantId", "sourceRef"])
       .execute();
 
     await schema
-      .createTable('clinical_claims')
-      .addColumn('id', 'varchar(26)', (col) => col.primaryKey())
-      .addColumn('tenantId', 'varchar(26)', (col) => col.notNull().references('tenants.id'))
-      .addColumn('encounterId', 'varchar(26)', (col) => col.notNull().references('encounters.id'))
-      .addColumn('kind', 'varchar(32)', (col) => col.notNull())
-      .addColumn('statement', 'text', (col) => col.notNull())
-      .addColumn('subjectRef', 'varchar(64)')
-      .addColumn('evidenceIdsJson', 'text', (col) => col.notNull())
-      .addColumn('originClass', 'varchar(24)', (col) => col.notNull())
-      .addColumn('confidence', 'double precision', (col) => col.notNull())
-      .addColumn('verificationState', 'varchar(16)', (col) => col.notNull())
+      .createTable("clinical_claims")
+      .addColumn("id", "varchar(26)", (col) => col.primaryKey())
+      .addColumn("tenantId", "varchar(26)", (col) =>
+        col.notNull().references("tenants.id"),
+      )
+      .addColumn("encounterId", "varchar(26)", (col) =>
+        col.notNull().references("encounters.id"),
+      )
+      .addColumn("kind", "varchar(32)", (col) => col.notNull())
+      .addColumn("statement", "text", (col) => col.notNull())
+      .addColumn("subjectRef", "varchar(64)")
+      .addColumn("evidenceIdsJson", "text", (col) => col.notNull())
+      .addColumn("originClass", "varchar(24)", (col) => col.notNull())
+      .addColumn("confidence", "double precision", (col) => col.notNull())
+      .addColumn("verificationState", "varchar(16)", (col) => col.notNull())
       // Provider, model and prompt version that produced the claim, when machine-generated.
-      .addColumn('generatedByJson', 'text')
-      .addColumn('createdAt', 'varchar(30)', (col) => col.notNull())
+      .addColumn("generatedByJson", "text")
+      .addColumn("createdAt", "varchar(30)", (col) => col.notNull())
       .execute();
 
     await schema
-      .createIndex('idx_claims_encounter')
-      .on('clinical_claims')
-      .columns(['tenantId', 'encounterId'])
+      .createIndex("idx_claims_encounter")
+      .on("clinical_claims")
+      .columns(["tenantId", "encounterId"])
       .execute();
   },
 };

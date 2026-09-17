@@ -17,16 +17,26 @@
  * triage, so it must be reproducible and auditable.
  */
 
-import { z } from 'zod';
-import { quantitySchema, type LabFlag } from './answer';
-import { idSchema, isoDateTimeSchema, confidenceSchema, originClassSchema, verificationStateSchema } from './primitives';
-import { convertLabToCanonical, isPlausibleLabValue, labTestDefinition } from './ontology/labs';
+import { z } from "zod";
+import { quantitySchema, type LabFlag } from "./answer";
+import {
+  idSchema,
+  isoDateTimeSchema,
+  confidenceSchema,
+  originClassSchema,
+  verificationStateSchema,
+} from "./primitives";
+import {
+  convertLabToCanonical,
+  isPlausibleLabValue,
+  labTestDefinition,
+} from "./ontology/labs";
 
 export type ReferenceSource =
-  | 'SOURCE_DOCUMENT'
-  | 'TENANT_CONFIGURED'
-  | 'MEDIKIOSK_DEFAULT'
-  | 'NOT_AVAILABLE';
+  | "SOURCE_DOCUMENT"
+  | "TENANT_CONFIGURED"
+  | "MEDIKIOSK_DEFAULT"
+  | "NOT_AVAILABLE";
 
 export interface FlagResult {
   readonly flag: LabFlag;
@@ -36,12 +46,12 @@ export interface FlagResult {
 }
 
 export const LAB_FLAG_VALUES = [
-  'NORMAL',
-  'HIGH',
-  'LOW',
-  'CRITICAL_HIGH',
-  'CRITICAL_LOW',
-  'UNKNOWN',
+  "NORMAL",
+  "HIGH",
+  "LOW",
+  "CRITICAL_HIGH",
+  "CRITICAL_LOW",
+  "UNKNOWN",
 ] as const;
 
 export const labResultSchema = z.object({
@@ -76,14 +86,17 @@ export type LabResult = z.infer<typeof labResultSchema>;
  * tenant-overridable, and require clinical review before clinical reliance (debt TD-06).
  */
 export const CRITICAL_LAB_THRESHOLDS: Readonly<
-  Record<string, { readonly criticalLow?: number; readonly criticalHigh?: number }>
+  Record<
+    string,
+    { readonly criticalLow?: number; readonly criticalHigh?: number }
+  >
 > = {
-  'MK-LAB-001': { criticalLow: 7, criticalHigh: 20 },
-  'MK-LAB-002': { criticalLow: 50, criticalHigh: 400 },
-  'MK-LAB-005': { criticalHigh: 4 },
-  'MK-LAB-006': { criticalLow: 120, criticalHigh: 160 },
-  'MK-LAB-007': { criticalLow: 2.5, criticalHigh: 6.5 },
-  'MK-LAB-009': { criticalLow: 50, criticalHigh: 1000 },
+  "MK-LAB-001": { criticalLow: 7, criticalHigh: 20 },
+  "MK-LAB-002": { criticalLow: 50, criticalHigh: 400 },
+  "MK-LAB-005": { criticalHigh: 4 },
+  "MK-LAB-006": { criticalLow: 120, criticalHigh: 160 },
+  "MK-LAB-007": { criticalLow: 2.5, criticalHigh: 6.5 },
+  "MK-LAB-009": { criticalLow: 50, criticalHigh: 1000 },
 };
 
 /**
@@ -107,55 +120,59 @@ export function flagLabResult(input: {
   let low = input.sourceLow;
   let high = input.sourceHigh;
   let referenceSource: ReferenceSource =
-    low !== undefined || high !== undefined ? 'SOURCE_DOCUMENT' : 'NOT_AVAILABLE';
+    low !== undefined || high !== undefined
+      ? "SOURCE_DOCUMENT"
+      : "NOT_AVAILABLE";
 
   if (low === undefined && high === undefined) {
     if (input.tenantLow !== undefined || input.tenantHigh !== undefined) {
       low = input.tenantLow;
       high = input.tenantHigh;
-      referenceSource = 'TENANT_CONFIGURED';
+      referenceSource = "TENANT_CONFIGURED";
     } else if (definition?.defaultReference) {
       low = definition.defaultReference.low;
       high = definition.defaultReference.high;
-      referenceSource = 'MEDIKIOSK_DEFAULT';
+      referenceSource = "MEDIKIOSK_DEFAULT";
     }
   }
 
   if (low === undefined && high === undefined) {
     return {
-      flag: 'UNKNOWN',
-      referenceSource: 'NOT_AVAILABLE',
+      flag: "UNKNOWN",
+      referenceSource: "NOT_AVAILABLE",
       explanation:
-        'No reference range was available for this test, so no interpretation is offered. The value is recorded as reported.',
+        "No reference range was available for this test, so no interpretation is offered. The value is recorded as reported.",
     };
   }
 
   const criticals = CRITICAL_LAB_THRESHOLDS[input.testCode];
-  let flag: LabFlag = 'NORMAL';
+  let flag: LabFlag = "NORMAL";
 
   if (high !== undefined && input.value > high) {
     flag =
-      criticals?.criticalHigh !== undefined && input.value >= criticals.criticalHigh
-        ? 'CRITICAL_HIGH'
-        : 'HIGH';
+      criticals?.criticalHigh !== undefined &&
+      input.value >= criticals.criticalHigh
+        ? "CRITICAL_HIGH"
+        : "HIGH";
   } else if (low !== undefined && input.value < low) {
     flag =
-      criticals?.criticalLow !== undefined && input.value <= criticals.criticalLow
-        ? 'CRITICAL_LOW'
-        : 'LOW';
+      criticals?.criticalLow !== undefined &&
+      input.value <= criticals.criticalLow
+        ? "CRITICAL_LOW"
+        : "LOW";
   }
 
   const sourceText =
-    referenceSource === 'SOURCE_DOCUMENT'
-      ? 'the range printed on the report'
-      : referenceSource === 'TENANT_CONFIGURED'
-        ? 'the range configured for this facility'
-        : 'the MediKiosk default range, which has not been validated against this laboratory';
+    referenceSource === "SOURCE_DOCUMENT"
+      ? "the range printed on the report"
+      : referenceSource === "TENANT_CONFIGURED"
+        ? "the range configured for this facility"
+        : "the MediKiosk default range, which has not been validated against this laboratory";
 
   return {
     flag,
     referenceSource,
-    explanation: `Value ${input.value} ${input.unit} interpreted against ${low ?? '—'} to ${high ?? '—'} ${input.unit} from ${sourceText}.`,
+    explanation: `Value ${input.value} ${input.unit} interpreted against ${low ?? "—"} to ${high ?? "—"} ${input.unit} from ${sourceText}.`,
   };
 }
 
@@ -166,16 +183,24 @@ export function flagLabResult(input: {
  * exactly the case a clinician should see, and treating it as benign would be the wrong default.
  */
 export function flagNeedsAttention(flag: LabFlag): boolean {
-  return flag !== 'NORMAL';
+  return flag !== "NORMAL";
 }
 
 /** A change between two results for the same test. */
 export interface LabTrend {
   readonly testCode: string;
-  readonly previous: { readonly value: number; readonly unit: string; readonly at: string };
-  readonly current: { readonly value: number; readonly unit: string; readonly at: string };
+  readonly previous: {
+    readonly value: number;
+    readonly unit: string;
+    readonly at: string;
+  };
+  readonly current: {
+    readonly value: number;
+    readonly unit: string;
+    readonly at: string;
+  };
   readonly delta: number;
-  readonly direction: 'INCREASED' | 'DECREASED' | 'UNCHANGED';
+  readonly direction: "INCREASED" | "DECREASED" | "UNCHANGED";
   /** Percentage change. Undefined when the previous value was zero, never Infinity. */
   readonly percentChange?: number;
   /** True when the change is large enough to be worth a physician's attention. */
@@ -190,28 +215,48 @@ export interface LabTrend {
  * itself a clinical conclusion.
  */
 export function compareLabResults(
-  previous: { readonly value: number; readonly unit: string; readonly at: string },
-  current: { readonly value: number; readonly unit: string; readonly at: string },
+  previous: {
+    readonly value: number;
+    readonly unit: string;
+    readonly at: string;
+  },
+  current: {
+    readonly value: number;
+    readonly unit: string;
+    readonly at: string;
+  },
   testCode: string,
   notableThreshold = 0.15,
 ): LabTrend {
   const delta = current.value - previous.value;
   const percentChange =
-    previous.value === 0 ? undefined : Number(((delta / Math.abs(previous.value)) * 100).toFixed(1));
-  const direction: LabTrend['direction'] =
-    delta === 0 ? 'UNCHANGED' : delta > 0 ? 'INCREASED' : 'DECREASED';
+    previous.value === 0
+      ? undefined
+      : Number(((delta / Math.abs(previous.value)) * 100).toFixed(1));
+  const direction: LabTrend["direction"] =
+    delta === 0 ? "UNCHANGED" : delta > 0 ? "INCREASED" : "DECREASED";
 
   const notable =
-    direction !== 'UNCHANGED' &&
+    direction !== "UNCHANGED" &&
     percentChange !== undefined &&
     Math.abs(percentChange) >= notableThreshold * 100;
 
-  const base: LabTrend = { testCode, previous, current, delta, direction, notable };
+  const base: LabTrend = {
+    testCode,
+    previous,
+    current,
+    delta,
+    direction,
+    notable,
+  };
   return percentChange === undefined ? base : { ...base, percentChange };
 }
 
 /** A laboratory result ready to be persisted, before identity linkage is attached. */
-export type PreparedLabResult = Pick<LabResult, 'testCode' | 'quantity' | 'flag' | 'implausible'>;
+export type PreparedLabResult = Pick<
+  LabResult,
+  "testCode" | "quantity" | "flag" | "implausible"
+>;
 
 /**
  * Prepare a laboratory result for storage, converting to the canonical unit where possible.
@@ -227,7 +272,10 @@ export function prepareLabResult(input: {
   readonly unit: string;
   readonly sourceLow?: number;
   readonly sourceHigh?: number;
-}): { readonly prepared?: PreparedLabResult; readonly issues: readonly string[] } {
+}): {
+  readonly prepared?: PreparedLabResult;
+  readonly issues: readonly string[];
+} {
   const issues: string[] = [];
   const definition = labTestDefinition(input.testCode);
 
@@ -235,7 +283,11 @@ export function prepareLabResult(input: {
     return { issues: [`Unknown laboratory test code: ${input.testCode}`] };
   }
 
-  const converted = convertLabToCanonical(input.testCode, input.value, input.unit);
+  const converted = convertLabToCanonical(
+    input.testCode,
+    input.value,
+    input.unit,
+  );
   if (!converted) {
     return {
       issues: [
@@ -266,8 +318,12 @@ export function prepareLabResult(input: {
       quantity: {
         value: converted.value,
         unit: converted.unit,
-        ...(input.sourceLow === undefined ? {} : { referenceLow: input.sourceLow }),
-        ...(input.sourceHigh === undefined ? {} : { referenceHigh: input.sourceHigh }),
+        ...(input.sourceLow === undefined
+          ? {}
+          : { referenceLow: input.sourceLow }),
+        ...(input.sourceHigh === undefined
+          ? {}
+          : { referenceHigh: input.sourceHigh }),
         referenceSource: flagResult.referenceSource,
       },
       flag: flagResult.flag,

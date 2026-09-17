@@ -7,9 +7,9 @@
  * English. See the i18n design.
  */
 
-import { z } from 'zod';
-import { SOCRATES_DIMENSIONS } from './socrates';
-import { SEVERITY_SCALE } from './primitives';
+import { z } from "zod";
+import { SOCRATES_DIMENSIONS } from "./socrates";
+import { SEVERITY_SCALE } from "./primitives";
 
 /**
  * How a question is presented and answered.
@@ -18,18 +18,18 @@ import { SEVERITY_SCALE } from './primitives';
  * patients who cannot or will not speak to a machine, and a kiosk in an Indian OPD must serve them.
  */
 export const QUESTION_KINDS = [
-  'YES_NO',
-  'SINGLE_CHOICE',
-  'MULTI_CHOICE',
-  'FREE_TEXT',
-  'SEVERITY',
-  'BODY_SITE',
-  'DURATION',
-  'NUMBER',
-  'DATE',
-  'DOCUMENT_UPLOAD',
+  "YES_NO",
+  "SINGLE_CHOICE",
+  "MULTI_CHOICE",
+  "FREE_TEXT",
+  "SEVERITY",
+  "BODY_SITE",
+  "DURATION",
+  "NUMBER",
+  "DATE",
+  "DOCUMENT_UPLOAD",
   /** A prompt with no answer, used to explain something or to request an action. */
-  'INSTRUCTION',
+  "INSTRUCTION",
 ] as const;
 
 export type QuestionKind = (typeof QUESTION_KINDS)[number];
@@ -41,12 +41,12 @@ export type QuestionKind = (typeof QUESTION_KINDS)[number];
  * still captured what matters most. A lower rank is asked earlier.
  */
 export const QUESTION_CATEGORIES = [
-  'SAFETY_CRITICAL',
-  'CHIEF_COMPLAINT',
-  'RELEVANT_HISTORY',
-  'MEDICATION_ALLERGY',
-  'CONTEXTUAL',
-  'COMPLETENESS',
+  "SAFETY_CRITICAL",
+  "CHIEF_COMPLAINT",
+  "RELEVANT_HISTORY",
+  "MEDICATION_ALLERGY",
+  "CONTEXTUAL",
+  "COMPLETENESS",
 ] as const;
 
 export type QuestionCategory = (typeof QUESTION_CATEGORIES)[number];
@@ -120,9 +120,14 @@ export type PathwayQuestionInput = z.input<typeof pathwayQuestionSchema>;
  * Unknown age includes the question rather than excluding it: silently skipping questions because
  * the age was not captured would reduce coverage without anyone noticing.
  */
-export function questionAppliesToAge(question: PathwayQuestion, ageYears?: number): boolean {
+export function questionAppliesToAge(
+  question: PathwayQuestion,
+  ageYears?: number,
+): boolean {
   if (ageYears === undefined) return true;
-  if (question.minAgeYears !== undefined && ageYears < question.minAgeYears) return false;
-  if (question.maxAgeYears !== undefined && ageYears > question.maxAgeYears) return false;
+  if (question.minAgeYears !== undefined && ageYears < question.minAgeYears)
+    return false;
+  if (question.maxAgeYears !== undefined && ageYears > question.maxAgeYears)
+    return false;
   return true;
 }

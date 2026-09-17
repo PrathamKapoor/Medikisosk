@@ -13,37 +13,40 @@
  * validated or converted. See ADR-009.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 import {
   confidenceSchema,
   idSchema,
   isoDateTimeSchema,
   originClassSchema,
   verificationStateSchema,
-} from './primitives';
+} from "./primitives";
 import {
   computeBmi,
   convertToCanonical,
   isPlausible,
   type BloodPressureReading,
-} from './ontology/vitals';
+} from "./ontology/vitals";
 
 export const VITAL_SOURCES = [
-  'MANUAL_ENTRY',
-  'KIOSK_DEVICE',
-  'STAFF_ENTRY',
-  'IMPORTED_REPORT',
+  "MANUAL_ENTRY",
+  "KIOSK_DEVICE",
+  "STAFF_ENTRY",
+  "IMPORTED_REPORT",
 ] as const;
 
-export const VITAL_SOURCE_LABELS: Record<(typeof VITAL_SOURCES)[number], string> = {
-  MANUAL_ENTRY: 'Entered at kiosk',
-  KIOSK_DEVICE: 'Connected device',
-  STAFF_ENTRY: 'Entered by staff',
-  IMPORTED_REPORT: 'Imported from report',
+export const VITAL_SOURCE_LABELS: Record<
+  (typeof VITAL_SOURCES)[number],
+  string
+> = {
+  MANUAL_ENTRY: "Entered at kiosk",
+  KIOSK_DEVICE: "Connected device",
+  STAFF_ENTRY: "Entered by staff",
+  IMPORTED_REPORT: "Imported from report",
 };
 
 /** Component discriminator for multi-component vitals. */
-export const VITAL_COMPONENTS = ['SYSTOLIC', 'DIASTOLIC'] as const;
+export const VITAL_COMPONENTS = ["SYSTOLIC", "DIASTOLIC"] as const;
 
 export const vitalRecordSchema = z.object({
   id: idSchema,
@@ -70,7 +73,10 @@ export const vitalRecordSchema = z.object({
 export type VitalRecord = z.infer<typeof vitalRecordSchema>;
 
 /** A vital ready to be persisted, before identity and encounter linkage are attached. */
-export type PreparedMeasurement = Omit<VitalRecord, 'id' | 'patientId' | 'encounterId'>;
+export type PreparedMeasurement = Omit<
+  VitalRecord,
+  "id" | "patientId" | "encounterId"
+>;
 
 export interface PreparedVital {
   readonly records: readonly PreparedMeasurement[];
@@ -95,7 +101,7 @@ export function prepareVital(input: {
   readonly source: (typeof VITAL_SOURCES)[number];
   readonly deviceId?: string;
   readonly confidence?: number;
-  readonly originClass?: VitalRecord['originClass'];
+  readonly originClass?: VitalRecord["originClass"];
 }): PreparedVital {
   const issues: string[] = [];
   const records: PreparedMeasurement[] = [];
@@ -106,41 +112,55 @@ export function prepareVital(input: {
     source: input.source,
     ...(input.deviceId === undefined ? {} : { deviceId: input.deviceId }),
     confidence: input.confidence ?? 0.95,
-    originClass: input.originClass ?? ('PATIENT_REPORTED' as const),
-    verificationState: 'UNVERIFIED' as const,
+    originClass: input.originClass ?? ("PATIENT_REPORTED" as const),
+    verificationState: "UNVERIFIED" as const,
     evidenceIds: [] as string[],
   };
 
-  if (input.conceptCode === 'MK-VIT-001') {
-    if (typeof input.value === 'number') {
-      issues.push('Blood pressure requires both a systolic and a diastolic value.');
+  if (input.conceptCode === "MK-VIT-001") {
+    if (typeof input.value === "number") {
+      issues.push(
+        "Blood pressure requires both a systolic and a diastolic value.",
+      );
       return { records, issues };
     }
     const { systolic, diastolic } = input.value;
-    const systolicOk = isPlausible('MK-VIT-001', systolic);
-    const diastolicOk = isPlausible('MK-VIT-001', diastolic);
+    const systolicOk = isPlausible("MK-VIT-001", systolic);
+    const diastolicOk = isPlausible("MK-VIT-001", diastolic);
     records.push(
-      { ...base, componentCode: 'SYSTOLIC', value: systolic, unit: 'mmHg', implausible: !systolicOk },
       {
         ...base,
-        componentCode: 'DIASTOLIC',
+        componentCode: "SYSTOLIC",
+        value: systolic,
+        unit: "mmHg",
+        implausible: !systolicOk,
+      },
+      {
+        ...base,
+        componentCode: "DIASTOLIC",
         value: diastolic,
-        unit: 'mmHg',
+        unit: "mmHg",
         implausible: !diastolicOk,
       },
     );
     if (!systolicOk || !diastolicOk) {
-      issues.push('Blood pressure is outside the plausible range. Confirm the measurement.');
+      issues.push(
+        "Blood pressure is outside the plausible range. Confirm the measurement.",
+      );
     }
     return { records, issues };
   }
 
-  if (typeof input.value !== 'number') {
-    issues.push('A numeric value is required for this vital.');
+  if (typeof input.value !== "number") {
+    issues.push("A numeric value is required for this vital.");
     return { records, issues };
   }
 
-  const converted = convertToCanonical(input.conceptCode, input.value, input.unit);
+  const converted = convertToCanonical(
+    input.conceptCode,
+    input.value,
+    input.unit,
+  );
   if (!converted) {
     issues.push(
       `Unit "${input.unit}" is not recognised for this vital, so the value was not recorded.`,
@@ -149,7 +169,10 @@ export function prepareVital(input: {
   }
 
   const implausible = !isPlausible(input.conceptCode, converted.value);
-  if (implausible) issues.push('The reading is outside the plausible range. Confirm the measurement.');
+  if (implausible)
+    issues.push(
+      "The reading is outside the plausible range. Confirm the measurement.",
+    );
 
   records.push({
     ...base,

@@ -13,20 +13,20 @@
  * nothing else.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 import {
   type OriginClass,
   type VerificationState,
   type Confidence,
-} from '@medikiosk/shared-types';
+} from "@medikiosk/shared-types";
 import {
   confidenceSchema,
   idSchema,
   isoDateSchema,
   originClassSchema,
   verificationStateSchema,
-} from './primitives';
-import type { LabFlag } from './answer';
+} from "./primitives";
+import type { LabFlag } from "./answer";
 import {
   ALLERGY_CATEGORIES,
   ALLERGY_STATUSES,
@@ -35,57 +35,63 @@ import {
   type AllergyCategory,
   type AllergyStatus,
   type ReactionSeverity,
-} from './ontology/allergies';
+} from "./ontology/allergies";
 
-export const MEDICATION_STATUSES = ['CURRENT', 'STOPPED', 'COMPLETED', 'UNKNOWN'] as const;
+export const MEDICATION_STATUSES = [
+  "CURRENT",
+  "STOPPED",
+  "COMPLETED",
+  "UNKNOWN",
+] as const;
 export type MedicationStatus = (typeof MEDICATION_STATUSES)[number];
 
 export const MEDICATION_STATUS_LABELS: Record<MedicationStatus, string> = {
-  CURRENT: 'Currently taking',
-  STOPPED: 'Stopped',
-  COMPLETED: 'Course completed',
-  UNKNOWN: 'Status not established',
+  CURRENT: "Currently taking",
+  STOPPED: "Stopped",
+  COMPLETED: "Course completed",
+  UNKNOWN: "Status not established",
 };
 
 export const MEDICATION_ROUTES = [
-  'ORAL',
-  'SUBLINGUAL',
-  'INHALED',
-  'TOPICAL',
-  'INJECTION_IM',
-  'INJECTION_IV',
-  'INJECTION_SC',
-  'RECTAL',
-  'NASAL',
-  'OPHTHALMIC',
-  'UNKNOWN',
+  "ORAL",
+  "SUBLINGUAL",
+  "INHALED",
+  "TOPICAL",
+  "INJECTION_IM",
+  "INJECTION_IV",
+  "INJECTION_SC",
+  "RECTAL",
+  "NASAL",
+  "OPHTHALMIC",
+  "UNKNOWN",
 ] as const;
 
 export const MEDICATION_FREQUENCIES = [
-  'OD',
-  'BD',
-  'TDS',
-  'QID',
-  'HS',
-  'SOS',
-  'WEEKLY',
-  'ALTERNATE_DAY',
-  'UNKNOWN',
+  "OD",
+  "BD",
+  "TDS",
+  "QID",
+  "HS",
+  "SOS",
+  "WEEKLY",
+  "ALTERNATE_DAY",
+  "UNKNOWN",
 ] as const;
 
 export type MedicationFrequency = (typeof MEDICATION_FREQUENCIES)[number];
 
-export const MEDICATION_FREQUENCY_LABELS: Record<MedicationFrequency, string> = {
-  OD: 'Once daily',
-  BD: 'Twice daily',
-  TDS: 'Three times daily',
-  QID: 'Four times daily',
-  HS: 'At night',
-  SOS: 'As needed',
-  WEEKLY: 'Weekly',
-  ALTERNATE_DAY: 'Alternate day',
-  UNKNOWN: 'Frequency not stated',
-};
+export const MEDICATION_FREQUENCY_LABELS: Record<MedicationFrequency, string> =
+  {
+    OD: "Once daily",
+    BD: "Twice daily",
+    TDS: "Three times daily",
+    QID: "Four times daily",
+    HS: "At night",
+    SOS: "As needed",
+    WEEKLY: "Weekly",
+    ALTERNATE_DAY: "Alternate day",
+    UNKNOWN: "Frequency not stated",
+  };
 
 export const medicationRecordSchema = z.object({
   id: idSchema,
@@ -99,10 +105,10 @@ export const medicationRecordSchema = z.object({
   strengthUnit: z.string().max(16).optional(),
   doseValue: z.number().optional(),
   doseUnit: z.string().max(16).optional(),
-  frequency: z.enum(MEDICATION_FREQUENCIES).default('UNKNOWN'),
-  route: z.enum(MEDICATION_ROUTES).default('UNKNOWN'),
+  frequency: z.enum(MEDICATION_FREQUENCIES).default("UNKNOWN"),
+  route: z.enum(MEDICATION_ROUTES).default("UNKNOWN"),
   durationDays: z.number().int().nonnegative().optional(),
-  status: z.enum(MEDICATION_STATUSES).default('CURRENT'),
+  status: z.enum(MEDICATION_STATUSES).default("CURRENT"),
   startedOn: isoDateSchema.optional(),
   stoppedOn: isoDateSchema.optional(),
   /** True when a clinician or document prescribed it, as opposed to the patient self-reporting it. */
@@ -145,8 +151,12 @@ export function reconcileMedications(
   current: readonly MedicationRecord[],
   allergyCodes: readonly string[] = [],
 ): MedicationReconciliation {
-  const previousByCode = new Map(previous.map((medication) => [medication.conceptCode, medication]));
-  const currentByCode = new Map(current.map((medication) => [medication.conceptCode, medication]));
+  const previousByCode = new Map(
+    previous.map((medication) => [medication.conceptCode, medication]),
+  );
+  const currentByCode = new Map(
+    current.map((medication) => [medication.conceptCode, medication]),
+  );
 
   const continued: string[] = [];
   const newInCurrent: string[] = [];
@@ -198,7 +208,7 @@ export const allergyRecordSchema = z.object({
   freeTextName: z.string().max(200).optional(),
   category: z.enum(ALLERGY_CATEGORIES).optional(),
   reactionText: z.string().max(500).optional(),
-  severity: z.enum(REACTION_SEVERITIES).default('UNKNOWN'),
+  severity: z.enum(REACTION_SEVERITIES).default("UNKNOWN"),
   onsetDate: isoDateSchema.optional(),
   confidence: confidenceSchema,
   originClass: originClassSchema,
@@ -237,21 +247,26 @@ export function summariseAllergies(
   status: AllergyStatus,
   allergies: readonly AllergyRecord[],
 ): AllergySummary {
-  const safeToAssumeNoAllergy = status === 'CONFIRMED_NO_KNOWN_ALLERGIES';
+  const safeToAssumeNoAllergy = status === "CONFIRMED_NO_KNOWN_ALLERGIES";
 
   const explanations: Record<AllergyStatus, string> = {
     NOT_ASKED:
       'Allergy status is UNKNOWN because the patient was not asked. This must not be treated as "no known allergies". Ask before prescribing.',
     CONFIRMED_NO_KNOWN_ALLERGIES:
-      'Patient explicitly reports no known allergies. Recorded as a positive statement with evidence.',
+      "Patient explicitly reports no known allergies. Recorded as a positive statement with evidence.",
     HAS_ALLERGIES: `${allergies.length} allergy record(s) recorded. Review against any planned prescription.`,
     PATIENT_UNSURE:
-      'Patient is unsure about allergies. Treat allergy status as unknown until clarified.',
+      "Patient is unsure about allergies. Treat allergy status as unknown until clarified.",
     PATIENT_DECLINED:
       'Patient declined to discuss allergies. Treat allergy status as unknown; do not infer "no allergies".',
   };
 
-  return { status, allergies, safeToAssumeNoAllergy, explanation: explanations[status] };
+  return {
+    status,
+    allergies,
+    safeToAssumeNoAllergy,
+    explanation: explanations[status],
+  };
 }
 
 /**
@@ -280,13 +295,13 @@ export function allergenWarningsForMedication(
 /** Fields a caller must supply to persist a medication, before identity linkage is attached. */
 export type PreparedMedication = Omit<
   MedicationRecord,
-  | 'id'
-  | 'patientId'
-  | 'encounterId'
-  | 'confidence'
-  | 'originClass'
-  | 'verificationState'
-  | 'evidenceIds'
+  | "id"
+  | "patientId"
+  | "encounterId"
+  | "confidence"
+  | "originClass"
+  | "verificationState"
+  | "evidenceIds"
 > & {
   readonly verificationState: VerificationState;
 };
@@ -301,27 +316,34 @@ export function makeMedication(
     readonly doseUnit?: string;
     readonly strengthValue?: number;
     readonly strengthUnit?: string;
-    readonly route?: MedicationRecord['route'];
+    readonly route?: MedicationRecord["route"];
     readonly status?: MedicationStatus;
     readonly isPrescribed?: boolean;
     readonly documentId?: string;
     readonly notes?: string;
   },
-  provenance: { readonly originClass: OriginClass; readonly confidence: Confidence },
+  provenance: {
+    readonly originClass: OriginClass;
+    readonly confidence: Confidence;
+  },
 ): PreparedMedication {
   return {
     conceptCode: input.conceptCode,
     asWrittenName: input.asWrittenName,
     ...(input.doseValue === undefined ? {} : { doseValue: input.doseValue }),
     ...(input.doseUnit === undefined ? {} : { doseUnit: input.doseUnit }),
-    ...(input.strengthValue === undefined ? {} : { strengthValue: input.strengthValue }),
-    ...(input.strengthUnit === undefined ? {} : { strengthUnit: input.strengthUnit }),
-    frequency: input.frequency ?? 'UNKNOWN',
-    route: input.route ?? 'UNKNOWN',
-    status: input.status ?? 'CURRENT',
+    ...(input.strengthValue === undefined
+      ? {}
+      : { strengthValue: input.strengthValue }),
+    ...(input.strengthUnit === undefined
+      ? {}
+      : { strengthUnit: input.strengthUnit }),
+    frequency: input.frequency ?? "UNKNOWN",
+    route: input.route ?? "UNKNOWN",
+    status: input.status ?? "CURRENT",
     isPrescribed: input.isPrescribed ?? false,
     ...(input.documentId === undefined ? {} : { documentId: input.documentId }),
     ...(input.notes === undefined ? {} : { notes: input.notes }),
-    verificationState: 'UNVERIFIED' as VerificationState,
+    verificationState: "UNVERIFIED" as VerificationState,
   };
 }

@@ -7,14 +7,14 @@
  * become a channel for PHI.
  */
 
-import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
-import type { Role } from './permissions';
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import type { Role } from "./permissions";
 
 export const STAFF_TOKEN_TTL_MINUTES = 12 * 60;
 export const KIOSK_TOKEN_TTL_MINUTES = 45;
 
 export interface StaffTokenClaims {
-  readonly kind: 'STAFF';
+  readonly kind: "STAFF";
   readonly sub: string;
   readonly tenantId: string;
   readonly username: string;
@@ -23,7 +23,7 @@ export interface StaffTokenClaims {
 }
 
 export interface KioskTokenClaims {
-  readonly kind: 'KIOSK';
+  readonly kind: "KIOSK";
   readonly sub: string;
   readonly tenantId: string;
   readonly kioskId: string;
@@ -34,7 +34,8 @@ export interface KioskTokenClaims {
 export type TokenClaims = StaffTokenClaims | KioskTokenClaims;
 
 /** Reasons a token may be rejected, surfaced as distinct error codes by the caller. */
-export type TokenRejection = 'EXPIRED' | 'MALFORMED' | 'WRONG_AUDIENCE' | 'UNVERIFIED';
+export type TokenRejection =
+  "EXPIRED" | "MALFORMED" | "WRONG_AUDIENCE" | "UNVERIFIED";
 
 function secretKey(secret: string): Uint8Array {
   // A weak secret is rejected at start-up by the configuration validator; this function only
@@ -43,33 +44,33 @@ function secretKey(secret: string): Uint8Array {
 }
 
 export async function signStaffToken(
-  claims: Omit<StaffTokenClaims, 'kind'>,
+  claims: Omit<StaffTokenClaims, "kind">,
   secret: string,
-  options: { readonly ttlMinutes?: number } = {},
+  options: { readonly ttlMinutes?: number; readonly now?: Date } = {},
 ): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor((options.now?.getTime() ?? Date.now()) / 1000);
   const ttl = options.ttlMinutes ?? STAFF_TOKEN_TTL_MINUTES;
-  return new SignJWT({ ...claims, kind: 'STAFF' })
-    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  return new SignJWT({ ...claims, kind: "STAFF" })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setIssuedAt(now)
-    .setIssuer('medikiosk')
-    .setAudience('medikiosk.staff')
+    .setIssuer("medikiosk")
+    .setAudience("medikiosk.staff")
     .setExpirationTime(now + ttl * 60)
     .sign(secretKey(secret));
 }
 
 export async function signKioskToken(
-  claims: Omit<KioskTokenClaims, 'kind'>,
+  claims: Omit<KioskTokenClaims, "kind">,
   secret: string,
-  options: { readonly ttlMinutes?: number } = {},
+  options: { readonly ttlMinutes?: number; readonly now?: Date } = {},
 ): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor((options.now?.getTime() ?? Date.now()) / 1000);
   const ttl = options.ttlMinutes ?? KIOSK_TOKEN_TTL_MINUTES;
-  return new SignJWT({ ...claims, kind: 'KIOSK' })
-    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+  return new SignJWT({ ...claims, kind: "KIOSK" })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setIssuedAt(now)
-    .setIssuer('medikiosk')
-    .setAudience('medikiosk.kiosk')
+    .setIssuer("medikiosk")
+    .setAudience("medikiosk.kiosk")
     .setExpirationTime(now + ttl * 60)
     .sign(secretKey(secret));
 }
@@ -84,16 +85,23 @@ export async function signKioskToken(
 export async function verifyToken<T extends TokenClaims>(
   token: string,
   secret: string,
-  expectedKind: T['kind'],
-): Promise<{ readonly ok: true; readonly claims: T } | { readonly ok: false; readonly reason: TokenRejection }> {
+  expectedKind: T["kind"],
+  options: { readonly now?: Date } = {},
+): Promise<
+  | { readonly ok: true; readonly claims: T }
+  | { readonly ok: false; readonly reason: TokenRejection }
+> {
   try {
-    const audience = expectedKind === 'STAFF' ? 'medikiosk.staff' : 'medikiosk.kiosk';
+    const audience =
+      expectedKind === "STAFF" ? "medikiosk.staff" : "medikiosk.kiosk";
     const { payload } = await jwtVerify(token, secretKey(secret), {
-      issuer: 'medikiosk',
+      issuer: "medikiosk",
       audience,
+      currentDate: options.now,
     });
 
-    if (payload.kind !== expectedKind) return { ok: false, reason: 'WRONG_AUDIENCE' };
+    if (payload.kind !== expectedKind)
+      return { ok: false, reason: "WRONG_AUDIENCE" };
     return { ok: true, claims: payload as unknown as T };
   } catch (error) {
     return { ok: false, reason: classifyRejection(error) };
@@ -102,14 +110,18 @@ export async function verifyToken<T extends TokenClaims>(
 
 function classifyRejection(error: unknown): TokenRejection {
   const message = error instanceof Error ? error.message : String(error);
-  if (/exp|expired/i.test(message)) return 'EXPIRED';
-  if (/audience|aud/i.test(message)) return 'WRONG_AUDIENCE';
-  if (/signature|verify/i.test(message)) return 'UNVERIFIED';
-  return 'MALFORMED';
+  // Audience first: jose's audience failure text contains "unexpected", whose "exp"
+  // substring otherwise reads as token expiry and mislabels a wrong-kind token.
+  if (/audience|aud/i.test(message)) return "WRONG_AUDIENCE";
+  if (/\bexp\b|expired/i.test(message)) return "EXPIRED";
+  if (/signature|verify/i.test(message)) return "UNVERIFIED";
+  return "MALFORMED";
 }
 
 /** Strip a bearer prefix. Returns undefined when the header is absent or malformed. */
-export function bearerToken(authorization: string | undefined): string | undefined {
+export function bearerToken(
+  authorization: string | undefined,
+): string | undefined {
   if (!authorization) return undefined;
   const match = /^Bearer\s+(.+)$/i.exec(authorization.trim());
   return match ? match[1] : undefined;
@@ -118,9 +130,11 @@ export function bearerToken(authorization: string | undefined): string | undefin
 /** Extract claims shape without verifying. Never used for authorisation, only for diagnostics. */
 export function inspectClaims(token: string): JWTPayload | undefined {
   try {
-    const [, payload] = token.split('.');
+    const [, payload] = token.split(".");
     if (!payload) return undefined;
-    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as JWTPayload;
+    return JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    ) as JWTPayload;
   } catch {
     return undefined;
   }

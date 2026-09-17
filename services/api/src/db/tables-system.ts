@@ -3,9 +3,44 @@
  * diagnosis, procedures, timeline, evaluation runs and configuration history.
  */
 
-import type { TenantRow, UserRow, KioskRow, SessionRow, PatientRow, ExternalIdentifierRow, IdentityChallengeRow, ConsentVersionRow, ConsentRow, EncounterRow } from './tables';
-import type { QuestionnaireResponseRow, SymptomRow, MedicationRow, AllergyRecordRow, AllergyStatusRow, HistoryRow, PersonalHistoryRow, VitalRow } from './tables-clinical';
-import type { LabResultRow, DocumentRow, DocumentPageRow, DocumentEntityRow, EvidenceRow, ClinicalClaimRow, TriageAssessmentRow, QueueEntryRow, SummaryRow, SummarySectionRow, AyushAssessmentRow, ContradictionRow, FhirResourceRow, SyncJobRow } from './tables-evidence';
+import type {
+  TenantRow,
+  UserRow,
+  KioskRow,
+  SessionRow,
+  PatientRow,
+  ExternalIdentifierRow,
+  IdentityChallengeRow,
+  ConsentVersionRow,
+  ConsentRow,
+  EncounterRow,
+} from "./tables";
+import type {
+  QuestionnaireResponseRow,
+  SymptomRow,
+  MedicationRow,
+  AllergyRecordRow,
+  AllergyStatusRow,
+  HistoryRow,
+  PersonalHistoryRow,
+  VitalRow,
+} from "./tables-clinical";
+import type {
+  LabResultRow,
+  DocumentRow,
+  DocumentPageRow,
+  DocumentEntityRow,
+  EvidenceRow,
+  ClinicalClaimRow,
+  TriageAssessmentRow,
+  QueueEntryRow,
+  SummaryRow,
+  SummarySectionRow,
+  AyushAssessmentRow,
+  ContradictionRow,
+  FhirResourceRow,
+  SyncJobRow,
+} from "./tables-evidence";
 
 export interface JobRow {
   id: string;
@@ -68,6 +103,7 @@ export interface IdempotencyKeyRow {
   responseJson: string;
   createdAt: string;
   expiresAt: string;
+  sessionId: string | null;
 }
 
 export interface DiagnosisRow {

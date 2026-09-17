@@ -17,15 +17,15 @@
  *   varchar(30)       ISO-8601 UTC timestamps, so no engine-local time function is involved
  */
 
-import { sql, type Kysely } from 'kysely';
-import type { AppDatabase } from './kysely';
+import { sql, type Kysely } from "kysely";
+import type { AppDatabase } from "./kysely";
 
 export interface Migration {
   readonly id: string;
   readonly up: (db: Kysely<unknown>) => Promise<void>;
 }
 
-export const MIGRATION_TABLE = 'schema_migrations';
+export const MIGRATION_TABLE = "schema_migrations";
 
 async function ensureMigrationTable(db: AppDatabase): Promise<void> {
   // `if not exists` is valid on both SQLite and Postgres, so no engine branch is needed.

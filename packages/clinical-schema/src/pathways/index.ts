@@ -7,16 +7,19 @@
  * any future research measurement meaningful.
  */
 
-import type { InterviewPathway } from '../pathway-model';
-import { validatePathway } from '../pathway-model';
-import { CHEST_PAIN_PATHWAY } from './chest-pain-pathway';
-import { HISTORY_GENERAL_PATHWAY } from './history-general';
-import { FEVER_PATHWAY, RESPIRATORY_PATHWAY } from './fever-respiratory';
-import { HEADACHE_PATHWAY, ABDOMINAL_PATHWAY } from './headache-abdominal';
-import { CHRONIC_DISEASE_PATHWAY, SPECIAL_POPULATIONS_PATHWAY } from './specialised-pathways';
-import { AYUSH_PATHWAY } from './ayush';
+import type { InterviewPathway } from "../pathway-model";
+import { validatePathway } from "../pathway-model";
+import { CHEST_PAIN_PATHWAY } from "./chest-pain-pathway";
+import { HISTORY_GENERAL_PATHWAY } from "./history-general";
+import { FEVER_PATHWAY, RESPIRATORY_PATHWAY } from "./fever-respiratory";
+import { HEADACHE_PATHWAY, ABDOMINAL_PATHWAY } from "./headache-abdominal";
+import {
+  CHRONIC_DISEASE_PATHWAY,
+  SPECIAL_POPULATIONS_PATHWAY,
+} from "./specialised-pathways";
+import { AYUSH_PATHWAY } from "./ayush";
 
-export const PATHWAY_VERSION = '1.0.0';
+export const PATHWAY_VERSION = "1.0.0";
 
 export const PATHWAYS: readonly InterviewPathway[] = [
   CHEST_PAIN_PATHWAY,
@@ -35,8 +38,12 @@ export const PATHWAY_BY_KEY: ReadonlyMap<string, InterviewPathway> = new Map(
 );
 
 /** Pathways whose complaint list covers the given complaint code. */
-export function pathwaysForComplaint(complaintCode: string): readonly InterviewPathway[] {
-  return PATHWAYS.filter((pathway) => pathway.complaintCodes.includes(complaintCode));
+export function pathwaysForComplaint(
+  complaintCode: string,
+): readonly InterviewPathway[] {
+  return PATHWAYS.filter((pathway) =>
+    pathway.complaintCodes.includes(complaintCode),
+  );
 }
 
 /** Every question key across every pathway, for the localisation-coverage check. */
@@ -63,8 +70,11 @@ export function questionInventory(): {
 }
 
 /** Every question object across every pathway, keyed by question key. */
-export function allQuestions(): ReadonlyMap<string, InterviewPathway['questions'][number]> {
-  const byKey = new Map<string, InterviewPathway['questions'][number]>();
+export function allQuestions(): ReadonlyMap<
+  string,
+  InterviewPathway["questions"][number]
+> {
+  const byKey = new Map<string, InterviewPathway["questions"][number]>();
   for (const pathway of PATHWAYS) {
     for (const question of pathway.questions) byKey.set(question.key, question);
   }
@@ -79,7 +89,10 @@ export function allQuestions(): ReadonlyMap<string, InterviewPathway['questions'
  * mid-interview. Failing fast at start-up is the correct trade, because a question key is also a
  * localisation key and a collision would silently show the wrong wording.
  */
-export function validateAllPathways(): { readonly ok: boolean; readonly problems: readonly string[] } {
+export function validateAllPathways(): {
+  readonly ok: boolean;
+  readonly problems: readonly string[];
+} {
   const problems: string[] = [];
   const seenPathwayKeys = new Set<string>();
   const seenQuestionKeys = new Map<string, string>();

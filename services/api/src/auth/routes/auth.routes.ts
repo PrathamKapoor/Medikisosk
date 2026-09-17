@@ -9,15 +9,17 @@
  * route contains its own error-to-status mapping.
  */
 
-import { z } from 'zod';
-import type { FastifyInstance } from 'fastify';
-import type { AppConfig } from '../../config/env';
-import { authenticateStaff } from '../middleware/authenticate';
-import type { AuthService } from '../service/auth.service';
+import { z } from "zod";
+import { MediKioskError } from "@medikiosk/shared-types";
+import type { FastifyInstance } from "fastify";
+import type { AppConfig } from "../../config/env";
+import { authenticateStaff } from "../middleware/authenticate";
+import type { AuthService } from "../service/auth.service";
 
 export interface AuthRouteDeps {
   readonly authService: AuthService;
   readonly config: AppConfig;
+  readonly now?: () => Date;
 }
 
 /**
@@ -37,36 +39,62 @@ export async function registerAuthRoutes(
   app: FastifyInstance,
   deps: AuthRouteDeps,
 ): Promise<void> {
-  app.post('/api/v1/auth/login', async (request, reply) => {
-    const body = loginBodySchema.parse(request.body ?? {});
-    const result = await deps.authService.login(body, { requestId: String(request.id) });
-
-    // Result -> throw, so the single error handler owns the envelope.
-    if (!result.ok) throw result.error;
-    const outcome = result.value;
-
-    reply.status(200).send({
-      token: outcome.token,
-      expiresAt: outcome.expiresAt,
-      user: {
-        id: outcome.principal.userId,
-        username: outcome.principal.username,
-        displayName: outcome.principal.displayName,
-        roles: outcome.principal.roles,
+  app.post(
+    "/api/v1/auth/login",
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+          errorResponseBuilder: () =>
+            new MediKioskError(
+              "RATE_LIMITED",
+              "Too many login attempts. Try again later.",
+            ),
+        },
       },
-      permissions: outcome.permissions,
-      tenant: outcome.tenant,
-    });
-  });
+    },
+    async (request, reply) => {
+      const body = loginBodySchema.parse(request.body ?? {});
+      const result = await deps.authService.login(body, {
+        requestId: String(request.id),
+      });
 
-  app.post('/api/v1/auth/logout', async (request, reply) => {
-    const principal = await authenticateStaff(request, deps.config);
+      // Result -> throw, so the single error handler owns the envelope.
+      if (!result.ok) throw result.error;
+      const outcome = result.value;
+
+      reply.status(200).send({
+        token: outcome.token,
+        expiresAt: outcome.expiresAt,
+        user: {
+          id: outcome.principal.userId,
+          username: outcome.principal.username,
+          displayName: outcome.principal.displayName,
+          roles: outcome.principal.roles,
+        },
+        permissions: outcome.permissions,
+        tenant: outcome.tenant,
+      });
+    },
+  );
+
+  app.post("/api/v1/auth/logout", async (request, reply) => {
+    const principal = await authenticateStaff(
+      request,
+      deps.config,
+      deps.now?.(),
+    );
     await deps.authService.logout(principal, { requestId: String(request.id) });
     reply.status(204).send();
   });
 
-  app.get('/api/v1/auth/me', async (request, reply) => {
-    const principal = await authenticateStaff(request, deps.config);
+  app.get("/api/v1/auth/me", async (request, reply) => {
+    const principal = await authenticateStaff(
+      request,
+      deps.config,
+      deps.now?.(),
+    );
 
     reply.status(200).send({
       user: {

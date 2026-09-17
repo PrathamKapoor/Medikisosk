@@ -10,24 +10,24 @@ declare const brand: unique symbol;
 
 export type Brand<T, B extends string> = T & { readonly [brand]: B };
 
-export type TenantId = Brand<string, 'TenantId'>;
-export type UserId = Brand<string, 'UserId'>;
-export type PatientId = Brand<string, 'PatientId'>;
-export type EncounterId = Brand<string, 'EncounterId'>;
-export type SessionId = Brand<string, 'SessionId'>;
-export type DocumentId = Brand<string, 'DocumentId'>;
-export type SummaryId = Brand<string, 'SummaryId'>;
-export type TriageAssessmentId = Brand<string, 'TriageAssessmentId'>;
-export type QueueEntryId = Brand<string, 'QueueEntryId'>;
-export type KioskId = Brand<string, 'KioskId'>;
-export type ConsentId = Brand<string, 'ConsentId'>;
-export type JobId = Brand<string, 'JobId'>;
+export type TenantId = Brand<string, "TenantId">;
+export type UserId = Brand<string, "UserId">;
+export type PatientId = Brand<string, "PatientId">;
+export type EncounterId = Brand<string, "EncounterId">;
+export type SessionId = Brand<string, "SessionId">;
+export type DocumentId = Brand<string, "DocumentId">;
+export type SummaryId = Brand<string, "SummaryId">;
+export type TriageAssessmentId = Brand<string, "TriageAssessmentId">;
+export type QueueEntryId = Brand<string, "QueueEntryId">;
+export type KioskId = Brand<string, "KioskId">;
+export type ConsentId = Brand<string, "ConsentId">;
+export type JobId = Brand<string, "JobId">;
 
 /** ISO-8601 instant in UTC, e.g. `2026-09-15T10:30:00.000Z`. */
-export type IsoDateTime = Brand<string, 'IsoDateTime'>;
+export type IsoDateTime = Brand<string, "IsoDateTime">;
 
 /** Calendar date, `YYYY-MM-DD`. Used where time-of-day is clinically meaningless. */
-export type IsoDate = Brand<string, 'IsoDate'>;
+export type IsoDate = Brand<string, "IsoDate">;
 
 /** Cast a validated string to a branded identifier. Validation is the caller's responsibility. */
 export function asId<T extends string>(value: string): T {

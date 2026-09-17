@@ -46,7 +46,11 @@ export interface VitalDefinition {
  * Expressed as factor plus offset so one code path handles affine and ratio conversions alike, and
  * so a future unit cannot be added incorrectly by forgetting the offset.
  */
-const FAHRENHEIT_TO_CELSIUS: UnitConversion = { unit: 'F', factor: 5 / 9, offset: -32 * (5 / 9) };
+const FAHRENHEIT_TO_CELSIUS: UnitConversion = {
+  unit: "F",
+  factor: 5 / 9,
+  offset: -32 * (5 / 9),
+};
 
 /** Populated from the definitions appended at the end of this file. */
 export const VITAL_BY_CODE: Map<string, VitalDefinition> = new Map();
@@ -86,10 +90,16 @@ export function convertToCanonical(
  *
  * An implausible reading is recorded and flagged, never discarded and never auto-interpreted.
  */
-export function isPlausible(vitalCode: string, canonicalValue: number): boolean {
+export function isPlausible(
+  vitalCode: string,
+  canonicalValue: number,
+): boolean {
   const definition = VITAL_BY_CODE.get(vitalCode);
   if (!definition) return false;
-  return canonicalValue >= definition.plausibleMin && canonicalValue <= definition.plausibleMax;
+  return (
+    canonicalValue >= definition.plausibleMin &&
+    canonicalValue <= definition.plausibleMax
+  );
 }
 
 /**
@@ -98,7 +108,10 @@ export function isPlausible(vitalCode: string, canonicalValue: number): boolean 
  * Returns undefined rather than a number when inputs are missing, so a caller cannot accidentally
  * treat "no BMI" as a numeric BMI of zero and flag the patient as severely underweight.
  */
-export function computeBmi(heightCm?: number, weightKg?: number): number | undefined {
+export function computeBmi(
+  heightCm?: number,
+  weightKg?: number,
+): number | undefined {
   if (heightCm === undefined || weightKg === undefined) return undefined;
   if (heightCm <= 0 || weightKg <= 0) return undefined;
   const heightMetres = heightCm / 100;
@@ -113,7 +126,7 @@ export function computeBmi(heightCm?: number, weightKg?: number): number | undef
 export interface BloodPressureReading {
   readonly systolic: number;
   readonly diastolic: number;
-  readonly unit: 'mmHg';
+  readonly unit: "mmHg";
 }
 
 // ---------------------------------------------------------------------------
@@ -122,94 +135,107 @@ export interface BloodPressureReading {
 
 export const VITAL_DEFINITIONS: readonly VitalDefinition[] = [
   {
-    code: 'MK-VIT-001',
-    display: 'Blood pressure',
-    canonicalUnit: 'mmHg',
-    alternativeUnits: [{ unit: 'mmHg', factor: 1 }],
+    code: "MK-VIT-001",
+    display: "Blood pressure",
+    canonicalUnit: "mmHg",
+    alternativeUnits: [{ unit: "mmHg", factor: 1 }],
     plausibleMin: 20,
     plausibleMax: 400,
     precision: 0,
-    aliases: ['blood pressure', 'bp', 'rakt chaap', 'बीपी', 'रक्तदाब'],
+    aliases: ["blood pressure", "bp", "rakt chaap", "बीपी", "रक्तदाब"],
   },
   {
-    code: 'MK-VIT-002',
-    display: 'Pulse rate',
-    canonicalUnit: 'beats/min',
-    alternativeUnits: [{ unit: 'beats/min', factor: 1 }, { unit: 'bpm', factor: 1 }],
+    code: "MK-VIT-002",
+    display: "Pulse rate",
+    canonicalUnit: "beats/min",
+    alternativeUnits: [
+      { unit: "beats/min", factor: 1 },
+      { unit: "bpm", factor: 1 },
+    ],
     plausibleMin: 10,
     plausibleMax: 350,
     precision: 0,
-    aliases: ['pulse', 'heart rate', 'hr', 'nadi', 'नाड़ी', 'धड़कन'],
+    aliases: ["pulse", "heart rate", "hr", "nadi", "नाड़ी", "धड़कन"],
   },
   {
-    code: 'MK-VIT-003',
-    display: 'Body temperature',
-    canonicalUnit: 'Cel',
-    alternativeUnits: [{ unit: 'Cel', factor: 1 }, { unit: 'C', factor: 1 }, FAHRENHEIT_TO_CELSIUS],
+    code: "MK-VIT-003",
+    display: "Body temperature",
+    canonicalUnit: "Cel",
+    alternativeUnits: [
+      { unit: "Cel", factor: 1 },
+      { unit: "C", factor: 1 },
+      FAHRENHEIT_TO_CELSIUS,
+    ],
     plausibleMin: 25,
     plausibleMax: 45,
     precision: 1,
-    aliases: ['temperature', 'temp', 'तापमान', 'ताप'],
+    aliases: ["temperature", "temp", "तापमान", "ताप"],
   },
   {
-    code: 'MK-VIT-004',
-    display: 'Oxygen saturation',
-    canonicalUnit: '%',
-    alternativeUnits: [{ unit: '%', factor: 1 }],
+    code: "MK-VIT-004",
+    display: "Oxygen saturation",
+    canonicalUnit: "%",
+    alternativeUnits: [{ unit: "%", factor: 1 }],
     plausibleMin: 30,
     plausibleMax: 100,
     precision: 0,
-    aliases: ['spo2', 'oxygen saturation', 'saturation', 'o2 sat', 'ऑक्सीजन'],
+    aliases: ["spo2", "oxygen saturation", "saturation", "o2 sat", "ऑक्सीजन"],
   },
   {
-    code: 'MK-VIT-005',
-    display: 'Respiratory rate',
-    canonicalUnit: 'breaths/min',
-    alternativeUnits: [{ unit: 'breaths/min', factor: 1 }],
+    code: "MK-VIT-005",
+    display: "Respiratory rate",
+    canonicalUnit: "breaths/min",
+    alternativeUnits: [{ unit: "breaths/min", factor: 1 }],
     plausibleMin: 4,
     plausibleMax: 80,
     precision: 0,
-    aliases: ['respiratory rate', 'breathing rate', 'श्वसन दर'],
+    aliases: ["respiratory rate", "breathing rate", "श्वसन दर"],
   },
   {
-    code: 'MK-VIT-006',
-    display: 'Random blood glucose',
-    canonicalUnit: 'mg/dL',
-    alternativeUnits: [{ unit: 'mg/dL', factor: 1 }, { unit: 'mmol/L', factor: 18.0182 }],
+    code: "MK-VIT-006",
+    display: "Random blood glucose",
+    canonicalUnit: "mg/dL",
+    alternativeUnits: [
+      { unit: "mg/dL", factor: 1 },
+      { unit: "mmol/L", factor: 18.0182 },
+    ],
     plausibleMin: 10,
     plausibleMax: 900,
     precision: 0,
-    aliases: ['blood sugar', 'glucose', 'sugar', 'शुगर'],
+    aliases: ["blood sugar", "glucose", "sugar", "शुगर"],
   },
   {
-    code: 'MK-VIT-007',
-    display: 'Height',
-    canonicalUnit: 'cm',
-    alternativeUnits: [{ unit: 'cm', factor: 1 }, { unit: 'm', factor: 100 }],
+    code: "MK-VIT-007",
+    display: "Height",
+    canonicalUnit: "cm",
+    alternativeUnits: [
+      { unit: "cm", factor: 1 },
+      { unit: "m", factor: 100 },
+    ],
     plausibleMin: 30,
     plausibleMax: 250,
     precision: 1,
-    aliases: ['height', 'ऊंचाई', 'उंची'],
+    aliases: ["height", "ऊंचाई", "उंची"],
   },
   {
-    code: 'MK-VIT-008',
-    display: 'Weight',
-    canonicalUnit: 'kg',
-    alternativeUnits: [{ unit: 'kg', factor: 1 }],
+    code: "MK-VIT-008",
+    display: "Weight",
+    canonicalUnit: "kg",
+    alternativeUnits: [{ unit: "kg", factor: 1 }],
     plausibleMin: 1,
     plausibleMax: 400,
     precision: 1,
-    aliases: ['weight', 'वज़न', 'वजन'],
+    aliases: ["weight", "वज़न", "वजन"],
   },
   {
-    code: 'MK-VIT-009',
-    display: 'Body mass index',
-    canonicalUnit: 'kg/m2',
-    alternativeUnits: [{ unit: 'kg/m2', factor: 1 }],
+    code: "MK-VIT-009",
+    display: "Body mass index",
+    canonicalUnit: "kg/m2",
+    alternativeUnits: [{ unit: "kg/m2", factor: 1 }],
     plausibleMin: 8,
     plausibleMax: 90,
     precision: 1,
-    aliases: ['bmi', 'body mass index'],
+    aliases: ["bmi", "body mass index"],
   },
 ];
 
@@ -227,10 +253,12 @@ for (const definition of VITAL_DEFINITIONS) {
  * safety purposes is produced by the versioned rule set, so a hospital that tunes its thresholds
  * changes the safety engine's behaviour and not this table.
  */
-export const VITAL_REFERENCE_HINTS: Readonly<Record<string, { low?: number; high?: number }>> = {
-  'MK-VIT-002': { low: 60, high: 100 },
-  'MK-VIT-003': { low: 36.1, high: 37.5 },
-  'MK-VIT-004': { low: 95, high: 100 },
-  'MK-VIT-005': { low: 12, high: 20 },
-  'MK-VIT-001': { low: 90, high: 140 },
+export const VITAL_REFERENCE_HINTS: Readonly<
+  Record<string, { low?: number; high?: number }>
+> = {
+  "MK-VIT-002": { low: 60, high: 100 },
+  "MK-VIT-003": { low: 36.1, high: 37.5 },
+  "MK-VIT-004": { low: 95, high: 100 },
+  "MK-VIT-005": { low: 12, high: 20 },
+  "MK-VIT-001": { low: 90, high: 140 },
 };

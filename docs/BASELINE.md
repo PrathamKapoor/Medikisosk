@@ -5,6 +5,11 @@
 **Auditor:** Principal Engineer (autonomous implementation agent)
 **Method:** filesystem enumeration, toolchain probing, native-dependency feasibility probes
 
+**Continuity correction (2026-09-17):** Sections 1–6 retain the original audit and
+proposed mitigations, not proof that those mitigations have shipped. The original
+all-phases-complete roadmap was unsupported. The corrected roadmap below and the
+latest phase report/handoff describe actual implementation; this is not a release report.
+
 ---
 
 ## 1. Repository state — measured, not assumed
@@ -252,31 +257,31 @@ patient input -> normalisation -> structured extraction -> evidence store
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Forensics, architecture, ADRs, toolchain | COMPLETE |
-| 1 | Foundation: monorepo, DB, migrations, auth, RBAC, config, logging, errors | COMPLETE |
-| 2 | Kiosk, identity, consent, localisation | COMPLETE |
-| 3 | Interview engine, SOCRATES, ontology, adaptive questioning | COMPLETE |
-| 4 | Voice: ASR/TTS abstraction + touch fallback | COMPLETE |
-| 5 | Document intelligence: OCR, extraction, human verification | COMPLETE |
-| 6 | Vitals, evidence graph, longitudinal timeline | COMPLETE |
-| 7 | Safety engine, red flags, triage, queue | COMPLETE |
-| 8 | AI synthesis, SOAP, evidence grounding, contradictions | COMPLETE |
-| 9 | Physician console, review + verification audit | COMPLETE |
-| 10 | AYUSH / Dashavidha Pariksha | COMPLETE |
-| 11 | FHIR R4 | COMPLETE |
-| 12 | ABDM adapter | COMPLETE (mock/sandbox boundary; production BLOCKED) |
-| 13 | HIS/EMR integration + outbox sync | COMPLETE |
-| 14 | Offline / local-first | COMPLETE |
-| 15 | Analytics | COMPLETE |
-| 16 | Evaluation framework | COMPLETE |
-| 17 | Security hardening | COMPLETE |
-| 18 | Deployment artefacts | COMPLETE (authored; local execution BLOCKED) |
-| 19 | End-to-end validation | COMPLETE |
-| 20 | SIH polish / demo scenarios | COMPLETE |
-| 21 | Startup readiness (multi-tenancy, flags, telemetry) | COMPLETE |
+| 0 | Forensics, architecture, ADRs, toolchain | PARTIALLY IMPLEMENTED — architecture documents mix planned and implemented behavior |
+| 1 | Foundation: monorepo, DB, migrations, auth, RBAC, config, logging, errors | PARTIALLY IMPLEMENTED — SQLite API builds; foundation verification in progress |
+| 2 | Kiosk, identity, consent, localisation | PARTIALLY IMPLEMENTED — localisation exists; lifecycle and kiosk continuation in progress |
+| 3 | Interview engine, SOCRATES, ontology, adaptive questioning | PARTIALLY IMPLEMENTED — domain vocabulary/pathways exist, interview runtime absent |
+| 4 | Voice: ASR/TTS abstraction + touch fallback | PLANNED |
+| 5 | Document intelligence: OCR, extraction, human verification | PLANNED |
+| 6 | Vitals, evidence graph, longitudinal timeline | PARTIALLY IMPLEMENTED — schema and synthetic seed, no runtime workflow |
+| 7 | Safety engine, red flags, triage, queue | PARTIALLY IMPLEMENTED — deterministic rules package, no queue runtime |
+| 8 | AI synthesis, SOAP, evidence grounding, contradictions | PLANNED |
+| 9 | Physician console, review + verification audit | PLANNED |
+| 10 | AYUSH / Dashavidha Pariksha | PARTIALLY IMPLEMENTED — ontology only |
+| 11 | FHIR R4 | PLANNED |
+| 12 | ABDM adapter | PLANNED — external activation requires approved credentials |
+| 13 | HIS/EMR integration + outbox sync | PLANNED |
+| 14 | Offline / local-first | PLANNED |
+| 15 | Analytics | PLANNED |
+| 16 | Evaluation framework | PLANNED |
+| 17 | Security hardening | PLANNED — existing controls are not a completed security review |
+| 18 | Deployment artefacts | PLANNED |
+| 19 | End-to-end clinical validation | PLANNED |
+| 20 | SIH polish / demo scenarios | PLANNED |
+| 21 | Startup readiness | PLANNED — tenant-aware schema is not product readiness |
 
-Phase statuses are updated only after that phase's quality gates have actually been run. See the
-per-phase reports and `FINAL_IMPLEMENTATION_REPORT.md`.
+No phase is release-complete. Phase-specific evidence belongs in the latest phase report;
+build success alone does not establish clinical safety, legal compliance or deployability.
 
 ---
 

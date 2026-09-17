@@ -1,6 +1,13 @@
-import { CATALOGUES } from './catalogue';
-import { missingKeys } from './translate';
-import { DEFAULT_LOCALE, LOCALE_CODES, PROVISIONAL_LOCALES, type Catalogue, type LocaleCode } from './types';
+import { CATALOGUES } from "./catalogue";
+import { missingKeys } from "./translate";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_CODES,
+  PROVISIONAL_LOCALES,
+  type Catalogue,
+  type LocaleCode,
+} from "./types";
+import { isRegistrationLocale } from "./registration";
 
 export interface VerifyResult {
   ok: boolean;
@@ -15,27 +22,27 @@ export interface VerifyResult {
  * ignore the warning.
  */
 const HIGH_VISIBILITY_KEYS: readonly string[] = [
-  'common.continue',
-  'common.back',
-  'common.yes',
-  'common.no',
-  'kiosk.welcome.title',
-  'kiosk.language.title',
-  'kiosk.listening',
-  'consent.title',
-  'consent.accept_all',
-  'severity.mild',
-  'severity.severe',
-  'triage.red.heading',
-  'triage.go_to_counter',
-  'document.type.prescription',
-  'auth.login.title',
-  'error.try_again',
-  'q.chest_pain.character',
-  'q.chest_pain.relief',
+  "common.continue",
+  "common.back",
+  "common.yes",
+  "common.no",
+  "kiosk.welcome.title",
+  "kiosk.language.title",
+  "kiosk.listening",
+  "consent.title",
+  "consent.accept_all",
+  "severity.mild",
+  "severity.severe",
+  "triage.red.heading",
+  "triage.go_to_counter",
+  "document.type.prescription",
+  "auth.login.title",
+  "error.try_again",
+  "q.chest_pain.character",
+  "q.chest_pain.relief",
 ];
 
-const CHEST_PAIN_PREFIX = 'q.chest_pain.';
+const CHEST_PAIN_PREFIX = "q.chest_pain.";
 
 function lookup(locale: LocaleCode, key: string): string | undefined {
   const catalogue: Catalogue | undefined = CATALOGUES[locale];
@@ -43,7 +50,7 @@ function lookup(locale: LocaleCode, key: string): string | undefined {
     return undefined;
   }
   const value = catalogue[key];
-  return typeof value === 'string' && value.length > 0 ? value : undefined;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 /**
@@ -85,16 +92,21 @@ export function verifyAllLocales(): VerifyResult {
     const keys = Object.keys(catalogue);
 
     // --- hard check: completeness against English -------------------------
-    const missing = missingKeys(locale);
+    // Registration is intentionally unavailable without a full consent-language flow.
+    const missing = missingKeys(locale).filter(
+      (key) => isRegistrationLocale(locale) || !key.startsWith("registration."),
+    );
     if (missing.length > 0) {
-      fail(`locale ${locale} is missing ${missing.length} key(s): ${missing.join(', ')}`);
+      fail(
+        `locale ${locale} is missing ${missing.length} key(s): ${missing.join(", ")}`,
+      );
     }
 
     // --- hard check: value shape ------------------------------------------
     const invalid: string[] = [];
     for (const key of keys) {
       const value = catalogue[key];
-      if (typeof value !== 'string') {
+      if (typeof value !== "string") {
         invalid.push(`${key} (not a string)`);
       } else if (value.length === 0) {
         invalid.push(`${key} (empty)`);
@@ -103,18 +115,26 @@ export function verifyAllLocales(): VerifyResult {
       }
     }
     if (invalid.length > 0) {
-      fail(`locale ${locale} has ${invalid.length} invalid value(s): ${invalid.join(', ')}`);
+      fail(
+        `locale ${locale} has ${invalid.length} invalid value(s): ${invalid.join(", ")}`,
+      );
     }
 
     // --- hard check: demo-critical chest-pain pathway ---------------------
-    const chestPainKeys = englishKeys.filter((key): boolean => key.startsWith(CHEST_PAIN_PREFIX));
-    const chestPainMissing = chestPainKeys.filter((key): boolean => lookup(locale, key) === undefined);
+    const chestPainKeys = englishKeys.filter((key): boolean =>
+      key.startsWith(CHEST_PAIN_PREFIX),
+    );
+    const chestPainMissing = chestPainKeys.filter(
+      (key): boolean => lookup(locale, key) === undefined,
+    );
     if (chestPainMissing.length > 0) {
       fail(
-        `locale ${locale} is missing ${chestPainMissing.length} chest-pain pathway key(s): ${chestPainMissing.join(', ')}`,
+        `locale ${locale} is missing ${chestPainMissing.length} chest-pain pathway key(s): ${chestPainMissing.join(", ")}`,
       );
     } else {
-      report.push(`[PASS] ${locale}: all ${chestPainKeys.length} chest-pain pathway keys present`);
+      report.push(
+        `[PASS] ${locale}: all ${chestPainKeys.length} chest-pain pathway keys present`,
+      );
     }
 
     // --- soft check: probably-untranslated high-visibility strings --------
@@ -129,20 +149,20 @@ export function verifyAllLocales(): VerifyResult {
       }
       if (untranslated.length > 0) {
         report.push(
-          `[WARN] ${locale}: ${untranslated.length} high-visibility key(s) are identical to English and may be untranslated: ${untranslated.join(', ')}`,
+          `[WARN] ${locale}: ${untranslated.length} high-visibility key(s) are identical to English and may be untranslated: ${untranslated.join(", ")}`,
         );
       }
     }
 
     report.push(
-      `[INFO] ${locale}: ${keys.length} keys, missing ${missing.length}, provisional ${provisional ? 'yes' : 'no'}`,
+      `[INFO] ${locale}: ${keys.length} keys, missing ${missing.length}, provisional ${provisional ? "yes" : "no"}`,
     );
   }
 
   report.push(
     ok
-      ? '[PASS] all locales verified (non-English catalogues remain PROVISIONAL pending native clinical review)'
-      : '[FAIL] verification failed',
+      ? "[PASS] all locales verified (non-English catalogues remain PROVISIONAL pending native clinical review)"
+      : "[FAIL] verification failed",
   );
 
   return { ok, report };

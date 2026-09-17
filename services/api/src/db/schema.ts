@@ -17,7 +17,7 @@ export type {
   ConsentVersionRow,
   ConsentRow,
   EncounterRow,
-} from './tables';
+} from "./tables";
 
 export type {
   QuestionnaireResponseRow,
@@ -28,7 +28,7 @@ export type {
   HistoryRow,
   PersonalHistoryRow,
   VitalRow,
-} from './tables-clinical';
+} from "./tables-clinical";
 
 export type {
   LabResultRow,
@@ -45,7 +45,7 @@ export type {
   ContradictionRow,
   FhirResourceRow,
   SyncJobRow,
-} from './tables-evidence';
+} from "./tables-evidence";
 
 export type {
   JobRow,
@@ -58,4 +58,4 @@ export type {
   EvaluationRunRow,
   TenantConfigHistoryRow,
   Database,
-} from './tables-system';
+} from "./tables-system";

@@ -6,11 +6,11 @@
  * model output never can be. See ADR-009.
  */
 
-import type { TriggerExpression } from '@medikiosk/clinical-schema';
-import type { TriageLevel, TriagePriority } from '@medikiosk/shared-types';
+import type { TriggerExpression } from "@medikiosk/clinical-schema";
+import type { TriageLevel, TriagePriority } from "@medikiosk/shared-types";
 
 /** The active clinical rule-set version. Recorded on every triage assessment for replay. */
-export const RULE_SET_VERSION = '1.0.0';
+export const RULE_SET_VERSION = "1.0.0";
 
 export interface RedFlagRule {
   /** Stable, human-readable, e.g. `CHEST_PAIN_HIGH_RISK_001`. Never renumbered once published. */
@@ -25,7 +25,8 @@ export interface RedFlagRule {
    */
   readonly evidenceRequired: readonly string[];
   readonly severity: TriageLevel;
-  readonly action: 'IMMEDIATE_HUMAN_TRIAGE' | 'PRIORITY_CLINICIAN_REVIEW' | 'ROUTINE';
+  readonly action:
+    "IMMEDIATE_HUMAN_TRIAGE" | "PRIORITY_CLINICIAN_REVIEW" | "ROUTINE";
   /** Why this matters clinically, shown to the physician with the hit. */
   readonly clinicalRationale: string;
   /** Provenance of the basis. A curated starter set says so; it never claims a guideline. */
@@ -41,26 +42,28 @@ export interface RuleEvaluationInput {
   readonly symptomCodes: readonly string[];
   readonly symptomFacts: readonly {
     readonly code: string;
-    readonly severity?: 'NONE' | 'MILD' | 'MODERATE' | 'SEVERE' | 'VERY_SEVERE' | 'UNKNOWN';
+    readonly severity?:
+      "NONE" | "MILD" | "MODERATE" | "SEVERE" | "VERY_SEVERE" | "UNKNOWN";
     readonly durationDays?: number;
     readonly negated: boolean;
   }[];
   readonly vitalFacts: readonly {
     readonly code: string;
-    readonly componentCode?: 'SYSTOLIC' | 'DIASTOLIC';
+    readonly componentCode?: "SYSTOLIC" | "DIASTOLIC";
     readonly value: number;
     readonly implausible?: boolean;
   }[];
   readonly labFacts: readonly {
     readonly testCode: string;
-    readonly flag: 'NORMAL' | 'HIGH' | 'LOW' | 'CRITICAL_HIGH' | 'CRITICAL_LOW' | 'UNKNOWN';
+    readonly flag:
+      "NORMAL" | "HIGH" | "LOW" | "CRITICAL_HIGH" | "CRITICAL_LOW" | "UNKNOWN";
     readonly value: number;
   }[];
   readonly conditionCodes: readonly string[];
   readonly medicationCodes: readonly string[];
   readonly allergyCodes: readonly string[];
   readonly ageYears?: number;
-  readonly sex?: 'MALE' | 'FEMALE' | 'OTHER';
+  readonly sex?: "MALE" | "FEMALE" | "OTHER";
   readonly pregnant?: boolean;
   /** Safety-critical question keys whose state is NOT terminal. Never treated as negative. */
   readonly safetyCriticalUnresolvedQuestionKeys: readonly string[];
@@ -73,7 +76,7 @@ export interface RedFlagHit {
   readonly ruleIdentifier: string;
   readonly ruleVersion: string;
   readonly severity: TriageLevel;
-  readonly action: RedFlagRule['action'];
+  readonly action: RedFlagRule["action"];
   readonly description: string;
   readonly clinicalRationale: string;
   readonly source: string;

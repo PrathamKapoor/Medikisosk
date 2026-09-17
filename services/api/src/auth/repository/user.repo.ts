@@ -9,11 +9,11 @@
  * every other module in `services/api`.
  */
 
-import { z } from 'zod';
-import { ulid } from 'ulid';
-import { ROLES, hashPassword, type Role } from '@medikiosk/auth';
-import type { AppDatabase } from '../../db/kysely';
-import type { UserRow } from '../../db/schema';
+import { z } from "zod";
+import { ulid } from "ulid";
+import { ROLES, hashPassword, type Role } from "@medikiosk/auth";
+import type { AppDatabase } from "../../db/kysely";
+import type { UserRow } from "../../db/schema";
 
 export const createUserSchema = z.object({
   tenantId: z.string().min(1),
@@ -37,7 +37,9 @@ export function parseRoles(rolesJson: string): readonly Role[] {
   }
   if (!Array.isArray(parsed)) return [];
   const valid = new Set<string>(ROLES);
-  return parsed.filter((entry): entry is Role => typeof entry === 'string' && valid.has(entry));
+  return parsed.filter(
+    (entry): entry is Role => typeof entry === "string" && valid.has(entry),
+  );
 }
 
 /**
@@ -51,10 +53,10 @@ export async function findUserByUsername(
   username: string,
 ): Promise<UserRow | undefined> {
   return db
-    .selectFrom('users')
+    .selectFrom("users")
     .selectAll()
-    .where('tenantId', '=', tenantId)
-    .where('username', '=', username)
+    .where("tenantId", "=", tenantId)
+    .where("username", "=", username)
     .executeTakeFirst();
 }
 
@@ -65,10 +67,10 @@ export async function findUserById(
   userId: string,
 ): Promise<UserRow | undefined> {
   return db
-    .selectFrom('users')
+    .selectFrom("users")
     .selectAll()
-    .where('tenantId', '=', tenantId)
-    .where('id', '=', userId)
+    .where("tenantId", "=", tenantId)
+    .where("id", "=", userId)
     .executeTakeFirst();
 }
 
@@ -88,7 +90,7 @@ export async function insertUser(
   const { hash } = await hashPassword(input.password, pepper);
 
   return db
-    .insertInto('users')
+    .insertInto("users")
     .values({
       id: ulid(),
       tenantId: input.tenantId,
@@ -111,5 +113,9 @@ export async function touchLastLogin(
   userId: string,
   at: string,
 ): Promise<void> {
-  await db.updateTable('users').set({ lastLoginAt: at, updatedAt: at }).where('id', '=', userId).execute();
+  await db
+    .updateTable("users")
+    .set({ lastLoginAt: at, updatedAt: at })
+    .where("id", "=", userId)
+    .execute();
 }

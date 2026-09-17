@@ -1,80 +1,53 @@
-/**
- * Capability declaration for `GET /api/v1/capabilities`.
- *
- * Generated from the same configuration the providers are constructed from, so the declaration can
- * never drift from reality. This is the mechanism by which the product never presents a mock as a
- * real capability.
- */
-
-import type { AppConfig } from './env';
+import type { AppConfig } from "./env";
 
 type CapabilityStatus = { provider: string; isMock: boolean; status: string };
-
-const mock = (provider: string): CapabilityStatus => ({ provider, isMock: true, status: 'MOCKED' });
-const real = (provider: string): CapabilityStatus => ({
-  provider,
-  isMock: false,
-  status: 'IMPLEMENTED',
-});
 const planned = (provider: string): CapabilityStatus => ({
   provider,
   isMock: false,
-  status: 'PLANNED',
+  status: "PLANNED",
 });
 
-export function capabilitiesFor(config: AppConfig): {
-  readonly deploymentMode: string;
-  readonly providers: Record<string, CapabilityStatus>;
-  readonly features: Record<string, boolean>;
-  readonly supportedLocales: readonly string[];
-  readonly limitations: readonly string[];
-} {
+/** Declares executable functionality, never merely configured provider names. */
+export function capabilitiesFor(config: AppConfig) {
   return {
     deploymentMode: config.MEDIKIOSK_DEPLOYMENT_MODE,
     providers: {
-      identity: config.IDENTITY_PROVIDER === 'mock' ? mock('mock') : real('abha'),
-      llm:
-        config.LLM_PROVIDER === 'mock'
-          ? mock('mock')
-          : config.LLM_PROVIDER === 'disabled'
-            ? planned('disabled')
-            : real(config.LLM_PROVIDER),
-      asr:
-        config.ASR_PROVIDER === 'mock'
-          ? mock('mock')
-          : config.ASR_PROVIDER === 'disabled'
-            ? planned('disabled')
-            : real(config.ASR_PROVIDER),
-      tts:
-        config.TTS_PROVIDER === 'mock'
-          ? mock('mock')
-          : config.TTS_PROVIDER === 'disabled'
-            ? planned('disabled')
-            : real(config.TTS_PROVIDER),
-      ocr:
-        config.OCR_PROVIDER === 'mock'
-          ? mock('mock')
-          : config.OCR_PROVIDER === 'disabled'
-            ? planned('disabled')
-            : real(config.OCR_PROVIDER),
-      ner: config.NER_PROVIDER === 'deterministic' ? real('deterministic') : planned(config.NER_PROVIDER),
-      abdm: mock('mock'),
+      identity:
+        config.IDENTITY_PROVIDER === "mock"
+          ? { provider: "mock", isMock: true, status: "MOCKED" }
+          : { provider: "abha", isMock: false, status: "BLOCKED" },
+      llm: planned(config.LLM_PROVIDER),
+      asr: planned(config.ASR_PROVIDER),
+      tts: planned(config.TTS_PROVIDER),
+      ocr: planned(config.OCR_PROVIDER),
+      ner:
+        config.NER_PROVIDER === "deterministic"
+          ? {
+              provider: "deterministic",
+              isMock: false,
+              status: "PARTIALLY IMPLEMENTED",
+            }
+          : planned(config.NER_PROVIDER),
+      abdm: { provider: "abdm", isMock: false, status: "BLOCKED" },
     },
     features: {
-      voice_enabled: config.FEATURE_VOICE_ENABLED,
-      tts_enabled: config.FEATURE_TTS_ENABLED,
-      document_ai_enabled: config.FEATURE_DOCUMENT_AI_ENABLED,
-      ayush_enabled: config.FEATURE_AYUSH_ENABLED,
-      abdm_enabled: config.FEATURE_ABDM_ENABLED,
-      offline_enabled: config.FEATURE_OFFLINE_ENABLED,
-      local_llm_enabled: config.FEATURE_LOCAL_LLM_ENABLED,
-      research_mode_enabled: config.FEATURE_RESEARCH_MODE_ENABLED,
+      voice_enabled: false,
+      tts_enabled: false,
+      document_ai_enabled: false,
+      ayush_enabled: false,
+      abdm_enabled: false,
+      offline_enabled: false,
+      local_llm_enabled: false,
+      research_mode_enabled: false,
     },
-    supportedLocales: ['en-IN', 'hi-IN', 'mr-IN', 'gu-IN', 'ta-IN', 'te-IN', 'bn-IN', 'kn-IN'],
+    supportedLocales: ["en-IN", "hi-IN", "mr-IN"],
     limitations: [
-      'Handwritten document OCR is not supported.',
-      'The red-flag rule set is a curated starter set and has not been prospectively clinically validated.',
-      'Non-English translations are machine-drafted and require native clinical review.',
+      "Identity verification is synthetic demonstration only, not ABHA or real patient matching.",
+      "Clinical interview, voice, document extraction, summaries and external ABDM workflows are not implemented.",
+      "Deterministic concept matching and safety rules exist as domain libraries, not clinical workflow endpoints.",
+      "The red-flag rule set is a curated starter set and has not been prospectively clinically validated.",
+      "Non-English translations are machine-drafted and require native clinical review.",
+      "DPDPA compliance is NOT ESTABLISHED; no legal review has occurred.",
     ],
   };
 }

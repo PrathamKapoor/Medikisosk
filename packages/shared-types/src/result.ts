@@ -7,7 +7,7 @@
  * converts into a structured response. Both paths carry a machine-readable code.
  */
 
-import type { MediKioskError } from './errors';
+import type { MediKioskError } from "./errors";
 
 export type Result<T, E = MediKioskError> =
   | { readonly ok: true; readonly value: T }
@@ -21,20 +21,29 @@ export function err<E>(error: E): Result<never, E> {
   return { ok: false, error };
 }
 
-export function isOk<T, E>(result: Result<T, E>): result is { ok: true; value: T } {
+export function isOk<T, E>(
+  result: Result<T, E>,
+): result is { ok: true; value: T } {
   return result.ok;
 }
 
-export function isErr<T, E>(result: Result<T, E>): result is { ok: false; error: E } {
+export function isErr<T, E>(
+  result: Result<T, E>,
+): result is { ok: false; error: E } {
   return !result.ok;
 }
 
 export function unwrap<T, E>(result: Result<T, E>): T {
   if (result.ok) return result.value;
-  throw result.error instanceof Error ? result.error : new Error(String(result.error));
+  throw result.error instanceof Error
+    ? result.error
+    : new Error(String(result.error));
 }
 
 /** Map a successful value, passing failures through unchanged. */
-export function mapResult<T, U, E>(result: Result<T, E>, fn: (value: T) => U): Result<U, E> {
+export function mapResult<T, U, E>(
+  result: Result<T, E>,
+  fn: (value: T) => U,
+): Result<U, E> {
   return result.ok ? ok(fn(result.value)) : result;
 }

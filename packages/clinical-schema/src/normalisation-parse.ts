@@ -2,9 +2,9 @@
  * Deterministic parsing of dates, severity, negation and certainty from patient language.
  */
 
-import type { Certainty, IsoDate } from '@medikiosk/shared-types';
-import type { SeverityScale } from './primitives';
-import { RELATIVE_DATE_WORDS, WEEKDAY_WORDS } from './normalisation-lexicon';
+import type { Certainty, IsoDate } from "@medikiosk/shared-types";
+import type { SeverityScale } from "./primitives";
+import { RELATIVE_DATE_WORDS, WEEKDAY_WORDS } from "./normalisation-lexicon";
 import {
   CONFIRMATION_WORDS,
   NEGATION_WORDS,
@@ -12,8 +12,13 @@ import {
   PROBABILITY_WORDS,
   SEVERITY_WORDS,
   UNCERTAINTY_WORDS,
-} from './normalisation-lexicon-words';
-import { durationInDays, matchesPhrase, parseDuration, tokenise } from './normalisation-quantity';
+} from "./normalisation-lexicon-words";
+import {
+  durationInDays,
+  matchesPhrase,
+  parseDuration,
+  tokenise,
+} from "./normalisation-quantity";
 
 function offsetDate(now: Date, dayOffset: number): IsoDate {
   const shifted = new Date(now.getTime() + dayOffset * 86_400_000);
@@ -29,12 +34,16 @@ function offsetDate(now: Date, dayOffset: number): IsoDate {
  * Hindi "kal" is genuinely ambiguous between yesterday and tomorrow and is resolved to the past,
  * which is both the correct default for a symptom onset and the safer reading for an intake.
  */
-export function parseRelativeDate(text: string, now: Date): IsoDate | undefined {
+export function parseRelativeDate(
+  text: string,
+  now: Date,
+): IsoDate | undefined {
   const tokens = tokenise(text);
 
   for (const candidate of RELATIVE_DATE_WORDS) {
     for (const word of candidate.words) {
-      if (matchesPhrase(tokens, word)) return offsetDate(now, candidate.dayOffset);
+      if (matchesPhrase(tokens, word))
+        return offsetDate(now, candidate.dayOffset);
     }
   }
 
@@ -89,12 +98,14 @@ export function detectUncertainty(text: string): boolean {
  * silently treating it as "no data".
  */
 export function parseCertainty(text: string): Certainty {
-  if (detectNegation(text)) return 'NEGATED';
+  if (detectNegation(text)) return "NEGATED";
   const tokens = tokenise(text);
-  if (CONFIRMATION_WORDS.some((word) => matchesPhrase(tokens, word))) return 'CONFIRMED';
-  if (PROBABILITY_WORDS.some((word) => matchesPhrase(tokens, word))) return 'PROBABLE';
-  if (detectUncertainty(text)) return 'SUSPECTED';
-  return 'UNKNOWN';
+  if (CONFIRMATION_WORDS.some((word) => matchesPhrase(tokens, word)))
+    return "CONFIRMED";
+  if (PROBABILITY_WORDS.some((word) => matchesPhrase(tokens, word)))
+    return "PROBABLE";
+  if (detectUncertainty(text)) return "SUSPECTED";
+  return "UNKNOWN";
 }
 
 /**
@@ -105,19 +116,19 @@ export function parseCertainty(text: string): Certainty {
  * cannot cause a clinical term to be missed.
  */
 export function detectScriptLanguage(text: string): string {
-  if (/[\u0B80-\u0BFF]/.test(text)) return 'ta-IN';
-  if (/[\u0C00-\u0C7F]/.test(text)) return 'te-IN';
-  if (/[\u0980-\u09FF]/.test(text)) return 'bn-IN';
-  if (/[\u0C80-\u0CFF]/.test(text)) return 'kn-IN';
-  if (/[\u0A80-\u0AFF]/.test(text)) return 'gu-IN';
-  if (/[\u0900-\u097F]/.test(text)) return 'hi-IN';
-  return 'en-IN';
+  if (/[\u0B80-\u0BFF]/.test(text)) return "ta-IN";
+  if (/[\u0C00-\u0C7F]/.test(text)) return "te-IN";
+  if (/[\u0980-\u09FF]/.test(text)) return "bn-IN";
+  if (/[\u0C80-\u0CFF]/.test(text)) return "kn-IN";
+  if (/[\u0A80-\u0AFF]/.test(text)) return "gu-IN";
+  if (/[\u0900-\u097F]/.test(text)) return "hi-IN";
+  return "en-IN";
 }
 
 /** True when the text mixes an Indic script with Latin words: genuine code-mixing. */
 export function isCodeMixed(text: string): boolean {
   const hasIndic =
-    /[\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF]/.test(
+    /(?:\p{Script=Devanagari}|\p{Script=Bengali}|\p{Script=Gurmukhi}|\p{Script=Gujarati}|\p{Script=Oriya}|\p{Script=Tamil}|\p{Script=Telugu}|\p{Script=Kannada})/u.test(
       text,
     );
   return hasIndic && /[a-z]{3,}/i.test(text);

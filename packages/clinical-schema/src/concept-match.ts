@@ -15,8 +15,8 @@ import {
   containsNonLatinScript,
   foldForMatching,
   type ConceptMatch,
-} from './concept';
-import type { ConceptIndex } from './concept-index';
+} from "./concept";
+import type { ConceptIndex } from "./concept-index";
 
 export interface MatchOptions {
   /** Minimum folded synonym length. Short synonyms produce too many accidental matches. */
@@ -36,10 +36,51 @@ export interface MatchOptions {
  * only filler words may sit between or around them. "the" can never become evidence of a disease.
  */
 const GAP_STOPWORDS: ReadonlySet<string> = new Set([
-  'in', 'of', 'the', 'a', 'an', 'to', 'for', 'and', 'or', 'is', 'are',
-  'mein', 'me', 'se', 'ka', 'ki', 'ke', 'ko', 'par', 'tak', 'wala', 'wali', 'wale',
-  'hai', 'hain', 'tha', 'thi', 'ho', 'gaya', 'gayi', 'raha', 'rahi', 'rahe',
-  'nahi', 'nahin', 'na', 'ek', 'yeh', 'ye', 'woh', 'wo', 'mera', 'mere', 'meri', 'mujhe',
+  "in",
+  "of",
+  "the",
+  "a",
+  "an",
+  "to",
+  "for",
+  "and",
+  "or",
+  "is",
+  "are",
+  "mein",
+  "me",
+  "se",
+  "ka",
+  "ki",
+  "ke",
+  "ko",
+  "par",
+  "tak",
+  "wala",
+  "wali",
+  "wale",
+  "hai",
+  "hain",
+  "tha",
+  "thi",
+  "ho",
+  "gaya",
+  "gayi",
+  "raha",
+  "rahi",
+  "rahe",
+  "nahi",
+  "nahin",
+  "na",
+  "ek",
+  "yeh",
+  "ye",
+  "woh",
+  "wo",
+  "mera",
+  "mere",
+  "meri",
+  "mujhe",
 ]);
 
 export function findConceptMatches(
@@ -64,8 +105,15 @@ export function findConceptMatches(
       if (at === -1) break;
 
       const end = at + synonym.length;
-      const boundaryOk = isBoundaryMatch(folded, at, end, options.allowSubstring === true);
-      const overlaps = claimed.some((span) => at < span.end && end > span.start);
+      const boundaryOk = isBoundaryMatch(
+        folded,
+        at,
+        end,
+        options.allowSubstring === true,
+      );
+      const overlaps = claimed.some(
+        (span) => at < span.end && end > span.start,
+      );
 
       if (boundaryOk && !overlaps) {
         const concepts = index.byText.get(synonym) ?? [];
@@ -89,7 +137,13 @@ export function findConceptMatches(
   }
 
   if (options.allowGapped !== false) {
-    findGappedMatches(folded, text, index, { minLength, exclude, claimed }, matches);
+    findGappedMatches(
+      folded,
+      text,
+      index,
+      { minLength, exclude, claimed },
+      matches,
+    );
   }
 
   return matches.sort((a, b) => a.start - b.start || b.score - a.score);
@@ -117,12 +171,12 @@ function findGappedMatches(
   },
   matches: ConceptMatch[],
 ): void {
-  const inputWords = new Set(folded.split(' ').filter(Boolean));
+  const inputWords = new Set(folded.split(" ").filter(Boolean));
   void inputWords;
 
   for (const synonym of index.sortedSynonyms) {
     if (synonym.length < state.minLength) continue;
-    const synonymWords = synonym.split(' ').filter(Boolean);
+    const synonymWords = synonym.split(" ").filter(Boolean);
     const contentWords = synonymWords.filter(
       (word) => !GAP_STOPWORDS.has(word) && word.length >= 3,
     );
@@ -143,9 +197,13 @@ function findGappedMatches(
     if (!present) continue;
 
     const spanStart = Math.min(...positions);
-    const spanEnd = Math.max(...positions) + ((contentWords[contentWords.length - 1] ?? '').length);
+    const spanEnd =
+      Math.max(...positions) +
+      (contentWords[contentWords.length - 1] ?? "").length;
 
-    const overlaps = state.claimed.some((span) => spanStart < span.end && spanEnd > span.start);
+    const overlaps = state.claimed.some(
+      (span) => spanStart < span.end && spanEnd > span.start,
+    );
     if (overlaps) continue;
 
     const concepts = index.byText.get(synonym) ?? [];
@@ -172,9 +230,9 @@ function indexOfWord(folded: string, word: string): number {
   for (;;) {
     const at = folded.indexOf(word, from);
     if (at === -1) return -1;
-    const beforeOk = at === 0 || folded[at - 1] === ' ';
+    const beforeOk = at === 0 || folded[at - 1] === " ";
     const end = at + word.length;
-    const afterOk = end >= folded.length || folded[end] === ' ';
+    const afterOk = end >= folded.length || folded[end] === " ";
     if (beforeOk && afterOk) return at;
     from = at + 1;
   }
@@ -187,8 +245,8 @@ function isBoundaryMatch(
   allowSubstring: boolean,
 ): boolean {
   if (allowSubstring) return true;
-  const beforeOk = start === 0 || folded[start - 1] === ' ';
-  const afterOk = end >= folded.length || folded[end] === ' ';
+  const beforeOk = start === 0 || folded[start - 1] === " ";
+  const afterOk = end >= folded.length || folded[end] === " ";
   return beforeOk && afterOk;
 }
 
@@ -199,7 +257,7 @@ function isBoundaryMatch(
  * than a calibrated confidence, so nothing downstream can mistake it for a probability of disease.
  */
 function matchScore(synonym: string): number {
-  const words = synonym.split(' ').length;
+  const words = synonym.split(" ").length;
   const byLength = Math.min(1, synonym.length / 24);
   const byWords = Math.min(0.3, (words - 1) * 0.15);
   return Math.min(1, byLength + byWords);
@@ -212,11 +270,14 @@ function matchScore(synonym: string): number {
  * duplicated fact would inflate the evidence count and could make a clinician think the complaint
  * was reported twice.
  */
-export function dedupeMatches(matches: readonly ConceptMatch[]): readonly ConceptMatch[] {
+export function dedupeMatches(
+  matches: readonly ConceptMatch[],
+): readonly ConceptMatch[] {
   const best = new Map<string, ConceptMatch>();
   for (const match of matches) {
     const existing = best.get(match.concept.code);
-    if (!existing || match.score > existing.score) best.set(match.concept.code, match);
+    if (!existing || match.score > existing.score)
+      best.set(match.concept.code, match);
   }
   return [...best.values()].sort((a, b) => a.start - b.start);
 }

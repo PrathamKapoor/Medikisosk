@@ -7,13 +7,13 @@
  * from the record. See ADR-005 and ADR-008.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 import {
   confidenceSchema,
   durationSchema,
   isoDateSchema,
   severitySchema,
-} from './primitives';
+} from "./primitives";
 
 export const normalisedAnswerSchema = z.object({
   /** The patient's own words or the option they selected. Never overwritten or rewritten. */
@@ -60,28 +60,33 @@ export const quantitySchema = z.object({
    * laboratory's own range over a universal table: ranges differ by assay and by population.
    */
   referenceSource: z
-    .enum(['SOURCE_DOCUMENT', 'TENANT_CONFIGURED', 'MEDIKIOSK_DEFAULT', 'NOT_AVAILABLE'])
-    .default('NOT_AVAILABLE'),
+    .enum([
+      "SOURCE_DOCUMENT",
+      "TENANT_CONFIGURED",
+      "MEDIKIOSK_DEFAULT",
+      "NOT_AVAILABLE",
+    ])
+    .default("NOT_AVAILABLE"),
 });
 
 export type Quantity = z.infer<typeof quantitySchema>;
 
 /** Deterministic interpretation of a quantity against its reference range. */
 export const LAB_FLAGS = [
-  'NORMAL',
-  'HIGH',
-  'LOW',
-  'CRITICAL_HIGH',
-  'CRITICAL_LOW',
-  'UNKNOWN',
+  "NORMAL",
+  "HIGH",
+  "LOW",
+  "CRITICAL_HIGH",
+  "CRITICAL_LOW",
+  "UNKNOWN",
 ] as const;
 export type LabFlag = (typeof LAB_FLAGS)[number];
 
 export const LAB_FLAG_LABELS: Record<LabFlag, string> = {
-  NORMAL: 'Normal',
-  HIGH: 'Above range',
-  LOW: 'Below range',
-  CRITICAL_HIGH: 'Critically high',
-  CRITICAL_LOW: 'Critically low',
-  UNKNOWN: 'No reference range available',
+  NORMAL: "Normal",
+  HIGH: "Above range",
+  LOW: "Below range",
+  CRITICAL_HIGH: "Critically high",
+  CRITICAL_LOW: "Critically low",
+  UNKNOWN: "No reference range available",
 };

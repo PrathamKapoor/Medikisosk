@@ -10,58 +10,72 @@
  * assessment, and it never overrides the clinician.
  */
 
-import type { Kysely } from 'kysely';
+import type { Kysely } from "kysely";
 
 export const MIGRATION_0009_TRIAGE = {
-  id: '0009_triage',
+  id: "0009_triage",
   async up(db: Kysely<unknown>): Promise<void> {
     const schema = db.schema;
 
     await schema
-      .createTable('triage_assessments')
-      .addColumn('id', 'varchar(26)', (col) => col.primaryKey())
-      .addColumn('tenantId', 'varchar(26)', (col) => col.notNull().references('tenants.id'))
-      .addColumn('encounterId', 'varchar(26)', (col) => col.notNull().references('encounters.id'))
-      .addColumn('level', 'varchar(16)', (col) => col.notNull())
-      .addColumn('priority', 'varchar(16)', (col) => col.notNull())
-      .addColumn('ruleSetVersion', 'varchar(24)', (col) => col.notNull())
-      .addColumn('requiresHumanReview', 'integer', (col) => col.notNull().defaultTo(0))
-      .addColumn('explanation', 'text', (col) => col.notNull())
-      .addColumn('hitsJson', 'text', (col) => col.notNull())
-      .addColumn('overriddenTo', 'varchar(16)')
-      .addColumn('overriddenBy', 'varchar(26)')
-      .addColumn('overrideReason', 'text')
-      .addColumn('overriddenAt', 'varchar(30)')
-      .addColumn('assessedAt', 'varchar(30)', (col) => col.notNull())
+      .createTable("triage_assessments")
+      .addColumn("id", "varchar(26)", (col) => col.primaryKey())
+      .addColumn("tenantId", "varchar(26)", (col) =>
+        col.notNull().references("tenants.id"),
+      )
+      .addColumn("encounterId", "varchar(26)", (col) =>
+        col.notNull().references("encounters.id"),
+      )
+      .addColumn("level", "varchar(16)", (col) => col.notNull())
+      .addColumn("priority", "varchar(16)", (col) => col.notNull())
+      .addColumn("ruleSetVersion", "varchar(24)", (col) => col.notNull())
+      .addColumn("requiresHumanReview", "integer", (col) =>
+        col.notNull().defaultTo(0),
+      )
+      .addColumn("explanation", "text", (col) => col.notNull())
+      .addColumn("hitsJson", "text", (col) => col.notNull())
+      .addColumn("overriddenTo", "varchar(16)")
+      .addColumn("overriddenBy", "varchar(26)")
+      .addColumn("overrideReason", "text")
+      .addColumn("overriddenAt", "varchar(30)")
+      .addColumn("assessedAt", "varchar(30)", (col) => col.notNull())
       .execute();
 
     await schema
-      .createIndex('idx_triage_encounter')
-      .on('triage_assessments')
-      .columns(['tenantId', 'encounterId'])
+      .createIndex("idx_triage_encounter")
+      .on("triage_assessments")
+      .columns(["tenantId", "encounterId"])
       .execute();
 
     await schema
-      .createTable('queue_entries')
-      .addColumn('id', 'varchar(26)', (col) => col.primaryKey())
-      .addColumn('tenantId', 'varchar(26)', (col) => col.notNull().references('tenants.id'))
-      .addColumn('encounterId', 'varchar(26)', (col) => col.notNull().references('encounters.id'))
-      .addColumn('patientId', 'varchar(26)', (col) => col.notNull().references('patients.id'))
-      .addColumn('priority', 'varchar(16)', (col) => col.notNull())
-      .addColumn('status', 'varchar(24)', (col) => col.notNull().defaultTo('WAITING'))
-      .addColumn('reason', 'text')
-      .addColumn('ruleIdentifiersJson', 'text', (col) => col.notNull())
-      .addColumn('enqueuedAt', 'varchar(30)', (col) => col.notNull())
-      .addColumn('calledAt', 'varchar(30)')
-      .addColumn('completedAt', 'varchar(30)')
-      .addColumn('updatedAt', 'varchar(30)', (col) => col.notNull())
+      .createTable("queue_entries")
+      .addColumn("id", "varchar(26)", (col) => col.primaryKey())
+      .addColumn("tenantId", "varchar(26)", (col) =>
+        col.notNull().references("tenants.id"),
+      )
+      .addColumn("encounterId", "varchar(26)", (col) =>
+        col.notNull().references("encounters.id"),
+      )
+      .addColumn("patientId", "varchar(26)", (col) =>
+        col.notNull().references("patients.id"),
+      )
+      .addColumn("priority", "varchar(16)", (col) => col.notNull())
+      .addColumn("status", "varchar(24)", (col) =>
+        col.notNull().defaultTo("WAITING"),
+      )
+      .addColumn("reason", "text")
+      .addColumn("ruleIdentifiersJson", "text", (col) => col.notNull())
+      .addColumn("enqueuedAt", "varchar(30)", (col) => col.notNull())
+      .addColumn("calledAt", "varchar(30)")
+      .addColumn("completedAt", "varchar(30)")
+      .addColumn("updatedAt", "varchar(30)", (col) => col.notNull())
       .execute();
 
     // The queue is read ordered by priority then arrival, so the index mirrors that access pattern.
     await schema
-      .createIndex('idx_queue_tenant_status')
-      .on('queue_entries')
-      .columns(['tenantId', 'status', 'priority', 'enqueuedAt'])
+      .createIndex("idx_queue_tenant_status")
+      .on("queue_entries")
+      .columns(["tenantId", "status", "priority", "enqueuedAt"])
       .execute();
   },
 };

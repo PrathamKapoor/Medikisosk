@@ -10,14 +10,14 @@
  *    kiosk is failing?") is answerable without any clinical content.
  */
 
-import pino, { type Logger as PinoLogger } from 'pino';
-import type { AppConfig } from '../config/env';
+import pino, { type Logger as PinoLogger } from "pino";
+import type { AppConfig } from "../config/env";
 
 export type LogContext = Partial<{
   requestId: string;
   tenantId: string;
   actorId: string;
-  actorKind: 'STAFF' | 'KIOSK' | 'SYSTEM';
+  actorKind: "STAFF" | "KIOSK" | "SYSTEM";
   route: string;
   durationMs: number;
 }>;
@@ -39,11 +39,16 @@ function looksLikePhi(key: string): boolean {
 export function scrubForLogging(value: unknown, allowPhi: boolean): unknown {
   if (allowPhi) return value;
   if (value === null || value === undefined) return value;
-  if (Array.isArray(value)) return value.map((item) => scrubForLogging(item, allowPhi));
-  if (typeof value === 'object') {
+  if (Array.isArray(value))
+    return value.map((item) => scrubForLogging(item, allowPhi));
+  if (typeof value === "object") {
     const out: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
-      out[key] = looksLikePhi(key) ? '[REDACTED]' : scrubForLogging(entry, allowPhi);
+    for (const [key, entry] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      out[key] = looksLikePhi(key)
+        ? "[REDACTED]"
+        : scrubForLogging(entry, allowPhi);
     }
     return out;
   }
@@ -59,50 +64,64 @@ export interface AppLogger {
   child(context: LogContext): AppLogger;
 }
 
-function makeLogger(pinoLogger: PinoLogger, allowPhi: boolean, base: LogContext): AppLogger {
-  const emit = (level: 'info' | 'warn' | 'error' | 'debug') => {
+function makeLogger(
+  pinoLogger: PinoLogger,
+  allowPhi: boolean,
+  base: LogContext,
+): AppLogger {
+  const emit = (level: "info" | "warn" | "error" | "debug") => {
     return (context: LogContext, message: string, data?: unknown) => {
       const merged = { ...base, ...context };
       if (data === undefined) pinoLogger[level](merged, message);
-      else pinoLogger[level]({ ...merged, data: scrubForLogging(data, allowPhi) }, message);
+      else
+        pinoLogger[level](
+          { ...merged, data: scrubForLogging(data, allowPhi) },
+          message,
+        );
     };
   };
 
   return {
     raw: pinoLogger,
-    info: emit('info'),
-    warn: emit('warn'),
-    error: emit('error'),
-    debug: emit('debug'),
-    child: (context: LogContext) => makeLogger(pinoLogger, allowPhi, { ...base, ...context }),
+    info: emit("info"),
+    warn: emit("warn"),
+    error: emit("error"),
+    debug: emit("debug"),
+    child: (context: LogContext) =>
+      makeLogger(pinoLogger, allowPhi, { ...base, ...context }),
   };
 }
 
 export function createLogger(config: AppConfig): AppLogger {
-  const pretty = config.NODE_ENV === 'development' || config.NODE_ENV === 'test';
+  const pretty =
+    config.NODE_ENV === "development" || config.NODE_ENV === "test";
   const pinoLogger = pino({
     level: config.LOG_LEVEL,
-    base: { service: 'medikiosk-api' },
+    base: { service: "medikiosk-api" },
     redact: {
       paths: [
-        '*.password',
-        '*.otp',
-        '*.token',
-        '*.secret',
-        '*.abhaNumber',
-        '*.displayName',
-        '*.rawAnswer',
-        '*.rawValue',
-        '*.transcript',
-        'req.headers.authorization',
+        "*.password",
+        "*.otp",
+        "*.token",
+        "*.secret",
+        "*.abhaNumber",
+        "*.displayName",
+        "*.rawAnswer",
+        "*.rawValue",
+        "*.transcript",
+        "req.headers.authorization",
       ],
       remove: false,
     },
     ...(pretty
       ? {
           transport: {
-            target: 'pino-pretty',
-            options: { colorize: true, translateTime: 'SYS:standard', ignore: 'pid,hostname' },
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+              ignore: "pid,hostname",
+            },
           },
         }
       : {}),

@@ -34,17 +34,27 @@ export type TriggerExpression =
   | { readonly ageAtLeast: number }
   /** Age in whole years at most this value. An unknown age makes this false. */
   | { readonly ageAtMost: number }
-  | { readonly sex: 'MALE' | 'FEMALE' | 'OTHER' }
+  | { readonly sex: "MALE" | "FEMALE" | "OTHER" }
   | { readonly pregnant: true }
   /** A recorded past or current condition with this concept code. */
   | { readonly hasCondition: string }
   /** At least one recorded medication whose concept code matches. */
   | { readonly hasMedication: string }
-  | { readonly hasAllergyCategory: 'DRUG' | 'FOOD' | 'ENVIRONMENTAL' | 'OTHER' }
+  | { readonly hasAllergyCategory: "DRUG" | "FOOD" | "ENVIRONMENTAL" | "OTHER" }
   /** The named symptom has been present for fewer than this many days. */
-  | { readonly symptomDurationLessThanDays: { readonly code: string; readonly days: number } }
+  | {
+      readonly symptomDurationLessThanDays: {
+        readonly code: string;
+        readonly days: number;
+      };
+    }
   /** The named symptom has been present for at least this many days. */
-  | { readonly symptomDurationAtLeastDays: { readonly code: string; readonly days: number } }
+  | {
+      readonly symptomDurationAtLeastDays: {
+        readonly code: string;
+        readonly days: number;
+      };
+    }
   /** A recorded vital exceeds a threshold, in the vital's canonical unit. */
   | { readonly vitalAbove: { readonly code: string; readonly value: number } }
   /** A recorded vital is below a threshold, in the vital's canonical unit. */
@@ -73,11 +83,13 @@ export interface TriggerContext {
   readonly answeredAny: Readonly<Record<string, boolean>>;
   readonly unanswered: Readonly<Record<string, boolean>>;
   readonly ageYears?: number;
-  readonly sex?: 'MALE' | 'FEMALE' | 'OTHER';
+  readonly sex?: "MALE" | "FEMALE" | "OTHER";
   readonly pregnant?: boolean;
   readonly conditionCodes: readonly string[];
   readonly medicationCodes: readonly string[];
-  readonly allergyCategories: readonly ('DRUG' | 'FOOD' | 'ENVIRONMENTAL' | 'OTHER')[];
+  readonly allergyCategories: readonly (
+    "DRUG" | "FOOD" | "ENVIRONMENTAL" | "OTHER"
+  )[];
   /** Vital code to value in the canonical unit. */
   readonly vitals: Readonly<Record<string, number>>;
   readonly labFlaggedHigh: readonly string[];

@@ -5,11 +5,15 @@
  * evaluation harness assert against.
  */
 
-import type { AppConfig } from '../config/env';
-import type { AppDatabase } from './kysely';
-import { DEMO_FIXTURES, seedDemoEncounters, seedDemoPatient } from './seed-demo-patient';
-import { seedDemoPriorFacts } from './seed-demo-prior';
-import { seedDemoCurrentVisit, type DemoCaseIds } from './seed-demo-current';
+import type { AppConfig } from "../config/env";
+import type { AppDatabase } from "./kysely";
+import {
+  DEMO_FIXTURES,
+  seedDemoEncounters,
+  seedDemoPatient,
+} from "./seed-demo-patient";
+import { seedDemoPriorFacts } from "./seed-demo-prior";
+import { seedDemoCurrentVisit, type DemoCaseIds } from "./seed-demo-current";
 
 export async function seedDemoCase(
   db: AppDatabase,

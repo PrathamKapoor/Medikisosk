@@ -7,10 +7,10 @@
  * remove the patient's own account from their medical record. See ADR-005.
  */
 
-import type { Confidence } from '@medikiosk/shared-types';
-import { normalisedAnswerSchema, type NormalisedAnswer } from './answer';
-import { dedupeMatches, findConceptMatches } from './concept-match';
-import { CONCEPT_INDEX } from './ontology';
+import type { Confidence } from "@medikiosk/shared-types";
+import { normalisedAnswerSchema, type NormalisedAnswer } from "./answer";
+import { dedupeMatches, findConceptMatches } from "./concept-match";
+import { CONCEPT_INDEX } from "./ontology";
 import {
   detectNegation,
   detectScriptLanguage,
@@ -18,8 +18,8 @@ import {
   isCodeMixed,
   parseRelativeDate,
   parseSeverity,
-} from './normalisation-parse';
-import { parseDuration } from './normalisation-quantity';
+} from "./normalisation-parse";
+import { parseDuration } from "./normalisation-quantity";
 
 export interface NormalisationContext {
   /**
@@ -48,7 +48,10 @@ export const DEFAULT_ASR_CONFIDENCE = 0.85;
  * of recognition and matching, so a strong matcher cannot rescue text that a recogniser may already
  * have corrupted.
  */
-export function normaliseAnswer(raw: string, context: NormalisationContext): NormalisedAnswer {
+export function normaliseAnswer(
+  raw: string,
+  context: NormalisationContext,
+): NormalisedAnswer {
   const matches = dedupeMatches(findConceptMatches(raw, CONCEPT_INDEX));
   const duration = parseDuration(raw);
   const severity = parseSeverity(raw);
@@ -57,12 +60,15 @@ export function normaliseAnswer(raw: string, context: NormalisationContext): Nor
   const uncertain = detectUncertainty(raw);
 
   const asrConfidence = context.asrConfidence ?? DEFAULT_ASR_CONFIDENCE;
-  const matchConfidence = matches.length > 0 ? Math.max(...matches.map((match) => match.score)) : 0;
+  const matchConfidence =
+    matches.length > 0 ? Math.max(...matches.map((match) => match.score)) : 0;
 
   // When nothing was recognised, the answer is only as good as the recogniser, and is discounted
   // further because there is no corroborating structure.
   const combined =
-    matches.length > 0 ? Math.min(asrConfidence, 0.5 + matchConfidence / 2) : asrConfidence * 0.6;
+    matches.length > 0
+      ? Math.min(asrConfidence, 0.5 + matchConfidence / 2)
+      : asrConfidence * 0.6;
 
   // Uncertainty expressed by the patient is a genuine reduction in reliability and must be visible.
   const penalty = uncertain ? 0.1 : 0;
@@ -77,7 +83,9 @@ export function normaliseAnswer(raw: string, context: NormalisationContext): Nor
     ...(duration === undefined ? {} : { duration }),
     ...(severity === undefined ? {} : { severity }),
     ...(resolvedOnsetDate === undefined ? {} : { resolvedOnsetDate }),
-    ...(duration?.verbatim === undefined ? {} : { quantityVerbatim: duration.verbatim }),
+    ...(duration?.verbatim === undefined
+      ? {}
+      : { quantityVerbatim: duration.verbatim }),
     confidence,
     language: asrLanguage,
     codeMixed: isCodeMixed(raw) || language !== asrLanguage,
@@ -95,21 +103,22 @@ export function normaliseAnswer(raw: string, context: NormalisationContext): Nor
  */
 export function describeNormalisedAnswer(answer: NormalisedAnswer): string {
   const parts: string[] = [];
-  if (answer.negated) parts.push('Denies');
-  if (answer.conceptCodes.length > 0) parts.push(answer.conceptCodes.join(', '));
+  if (answer.negated) parts.push("Denies");
+  if (answer.conceptCodes.length > 0)
+    parts.push(answer.conceptCodes.join(", "));
   if (answer.duration) {
     parts.push(
-      `${answer.duration.approximate ? 'about ' : ''}${answer.duration.value} ${answer.duration.unit
+      `${answer.duration.approximate ? "about " : ""}${answer.duration.value} ${answer.duration.unit
         .toLowerCase()
-        .replace(/s$/, '')}${answer.duration.value === 1 ? '' : 's'}`,
+        .replace(/s$/, "")}${answer.duration.value === 1 ? "" : "s"}`,
     );
   }
-  if (answer.severity && answer.severity !== 'UNKNOWN') {
-    parts.push(`severity ${answer.severity.toLowerCase().replace(/_/g, ' ')}`);
+  if (answer.severity && answer.severity !== "UNKNOWN") {
+    parts.push(`severity ${answer.severity.toLowerCase().replace(/_/g, " ")}`);
   }
   if (answer.resolvedOnsetDate) parts.push(`from ${answer.resolvedOnsetDate}`);
   if (parts.length === 0) return `Patient said: "${answer.rawAnswer}"`;
-  return `${parts.join(', ')} — patient said: "${answer.rawAnswer}"`;
+  return `${parts.join(", ")} — patient said: "${answer.rawAnswer}"`;
 }
 
 /**
@@ -118,6 +127,9 @@ export function describeNormalisedAnswer(answer: NormalisedAnswer): string {
  * A low-confidence interpretation of a safety-relevant answer must never be silently promoted into
  * the record, because the safety engine reads the record.
  */
-export function needsPatientConfirmation(answer: NormalisedAnswer, threshold = 0.7): boolean {
+export function needsPatientConfirmation(
+  answer: NormalisedAnswer,
+  threshold = 0.7,
+): boolean {
   return answer.confidence < threshold;
 }

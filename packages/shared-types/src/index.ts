@@ -6,10 +6,10 @@
  * applications can both depend on it safely.
  */
 
-export * from './ids';
-export * from './provenance';
-export * from './response-state';
-export * from './triage';
-export * from './result';
-export * from './errors';
-export * from './clock';
+export * from "./ids";
+export * from "./provenance";
+export * from "./response-state";
+export * from "./triage";
+export * from "./result";
+export * from "./errors";
+export * from "./clock";

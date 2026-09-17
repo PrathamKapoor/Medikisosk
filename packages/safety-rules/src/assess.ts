@@ -6,16 +6,25 @@
  * demands attention without asserting an acuity it has no evidence for.
  */
 
-import { evaluateTrigger } from '@medikiosk/clinical-schema';
-import { levelToPriority, maxTriageLevel, TRIAGE_SEVERITY_RANK, type TriageLevel } from '@medikiosk/shared-types';
+import { evaluateTrigger } from "@medikiosk/clinical-schema";
+import {
+  levelToPriority,
+  maxTriageLevel,
+  TRIAGE_SEVERITY_RANK,
+  type TriageLevel,
+} from "@medikiosk/shared-types";
 import {
   RULE_SET_VERSION,
   type RedFlagHit,
   type RedFlagRule,
   type RuleEvaluationInput,
   type TriageAssessmentResult,
-} from './types';
-import { buildTriggerContext, collectEvidenceFacts, DEFAULT_RULES } from './engine';
+} from "./types";
+import {
+  buildTriggerContext,
+  collectEvidenceFacts,
+  DEFAULT_RULES,
+} from "./engine";
 
 export function evaluateTriage(
   input: RuleEvaluationInput,
@@ -25,15 +34,20 @@ export function evaluateTriage(
   const facts = collectEvidenceFacts(input);
 
   const hits: RedFlagHit[] = [];
-  const evidenceGated: { identifier: string; missing: readonly string[] }[] = [];
+  const evidenceGated: { identifier: string; missing: readonly string[] }[] =
+    [];
   const ageSkipped: string[] = [];
 
   for (const rule of rules) {
-    if (rule.identifier === 'DATA_INCOMPLETE_SAFETY_001') {
+    if (rule.identifier === "DATA_INCOMPLETE_SAFETY_001") {
       if (input.safetyCriticalUnresolvedQuestionKeys.length > 0) {
-        hits.push(makeHit(rule, `Unresolved safety-critical question(s): ${input.safetyCriticalUnresolvedQuestionKeys.join(', ')}`, [
-          ...input.safetyCriticalUnresolvedQuestionKeys,
-        ]));
+        hits.push(
+          makeHit(
+            rule,
+            `Unresolved safety-critical question(s): ${input.safetyCriticalUnresolvedQuestionKeys.join(", ")}`,
+            [...input.safetyCriticalUnresolvedQuestionKeys],
+          ),
+        );
       }
       continue;
     }
@@ -43,14 +57,17 @@ export function evaluateTriage(
         ageSkipped.push(rule.identifier);
         continue;
       }
-      if (rule.minAgeYears !== undefined && input.ageYears < rule.minAgeYears) continue;
-      if (rule.maxAgeYears !== undefined && input.ageYears > rule.maxAgeYears) continue;
+      if (rule.minAgeYears !== undefined && input.ageYears < rule.minAgeYears)
+        continue;
+      if (rule.maxAgeYears !== undefined && input.ageYears > rule.maxAgeYears)
+        continue;
     }
 
     if (!evaluateTrigger(rule.trigger, context)) continue;
 
     const missing = rule.evidenceRequired.filter(
-      (fact) => !facts.has(fact) && !facts.has((fact.split(':')[0] as string) ?? fact),
+      (fact) =>
+        !facts.has(fact) && !facts.has((fact.split(":")[0] as string) ?? fact),
     );
     if (missing.length > 0) {
       evidenceGated.push({ identifier: rule.identifier, missing });
@@ -61,10 +78,12 @@ export function evaluateTriage(
   }
 
   const decisiveHits = hits.filter((hit) => !hit.advisoryOnly);
-  const level: TriageLevel = maxTriageLevel(decisiveHits.map((hit) => hit.severity));
+  const level: TriageLevel = maxTriageLevel(
+    decisiveHits.map((hit) => hit.severity),
+  );
 
   const requiresHumanReview =
-    hits.some((hit) => hit.action === 'IMMEDIATE_HUMAN_TRIAGE') ||
+    hits.some((hit) => hit.action === "IMMEDIATE_HUMAN_TRIAGE") ||
     hits.some((hit) => hit.advisoryOnly);
 
   return {
@@ -73,7 +92,13 @@ export function evaluateTriage(
     hits,
     requiresHumanReview,
     ruleSetVersion: RULE_SET_VERSION,
-    explanation: renderExplanation(hits, evidenceGated, ageSkipped, level, requiresHumanReview),
+    explanation: renderExplanation(
+      hits,
+      evidenceGated,
+      ageSkipped,
+      level,
+      requiresHumanReview,
+    ),
   };
 }
 
@@ -114,33 +139,38 @@ function renderExplanation(
   const gatedText =
     evidenceGated.length > 0
       ? ` Not evaluated to a hit for lack of evidence: ${evidenceGated
-          .map((gated) => `${gated.identifier} (missing ${gated.missing.join(', ')})`)
-          .join('; ')}.`
-      : '';
+          .map(
+            (gated) =>
+              `${gated.identifier} (missing ${gated.missing.join(", ")})`,
+          )
+          .join("; ")}.`
+      : "";
   const ageText =
     ageSkipped.length > 0
-      ? ` Not evaluated for lack of age: ${ageSkipped.join(', ')}. The unknown age requires human review rather than being assumed safe.`
-      : '';
+      ? ` Not evaluated for lack of age: ${ageSkipped.join(", ")}. The unknown age requires human review rather than being assumed safe.`
+      : "";
 
   if (hits.length === 0) {
     return (
       `No red-flag rule fired. This is a routine assessment from rule set ${RULE_SET_VERSION}.${gatedText}${ageText} ` +
-      'A clear rule evaluation is not a diagnosis and does not exclude serious illness; the physician review remains the clinical authority.'
+      "A clear rule evaluation is not a diagnosis and does not exclude serious illness; the physician review remains the clinical authority."
     );
   }
 
   const hitText = hits
     .map(
       (hit) =>
-        `${hit.ruleIdentifier} (${hit.ruleVersion}): ${hit.description}. Evidence: ${hit.evidenceRefs.join(', ')}.`,
+        `${hit.ruleIdentifier} (${hit.ruleVersion}): ${hit.description}. Evidence: ${hit.evidenceRefs.join(", ")}.`,
     )
-    .join(' ');
+    .join(" ");
 
   const levelWord =
-    TRIAGE_SEVERITY_RANK[level] === 2 ? 'Priority assessment required' : 'Priority review advised';
+    TRIAGE_SEVERITY_RANK[level] === 2
+      ? "Priority assessment required"
+      : "Priority review advised";
   const reviewWord = requiresHumanReview
-    ? ' The patient must be seen by a human before routine handling.'
-    : '';
+    ? " The patient must be seen by a human before routine handling."
+    : "";
 
   return `${levelWord}. ${hitText}${gatedText}${ageText}${reviewWord} Rule set ${RULE_SET_VERSION}. A rule evaluation is not a diagnosis.`;
 }

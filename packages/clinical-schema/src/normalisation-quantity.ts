@@ -6,9 +6,9 @@
  * fact, and a fabricated fact in a medical record is worse than a missing one.
  */
 
-import type { Duration, DurationUnit } from './primitives';
-import { DURATION_UNIT_WORDS, NUMBER_WORDS } from './normalisation-lexicon';
-import { APPROXIMATION_WORDS } from './normalisation-lexicon-words';
+import type { Duration, DurationUnit } from "./primitives";
+import { DURATION_UNIT_WORDS, NUMBER_WORDS } from "./normalisation-lexicon";
+import { APPROXIMATION_WORDS } from "./normalisation-lexicon-words";
 
 /**
  * Split text into comparable tokens.
@@ -18,12 +18,12 @@ import { APPROXIMATION_WORDS } from './normalisation-lexicon-words';
  */
 export function tokenise(text: string): readonly string[] {
   return text
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/(\d)([a-z\u0900-\u0DFF])/g, '$1 $2')
-    .replace(/([a-z\u0900-\u0DFF])(\d)/g, '$1 $2')
-    .split(/[^0-9a-z\u0900-\u0DFF.]+/i)
+    .replace(/(\d)([\u0900-\u0DFFa-z])/gu, "$1 $2")
+    .replace(/([\u0900-\u0DFFa-z])(\d)/gu, "$1 $2")
+    .split(/(?:[^0-9a-z.]|[\u0900-\u0DFF]+)/iu)
     .filter((token) => token.length > 0);
 }
 
@@ -34,25 +34,28 @@ export function numberOf(token: string): number | undefined {
 }
 
 /** True when a word or multi-word phrase occurs in the tokenised text. */
-export function matchesPhrase(tokens: readonly string[], phrase: string): boolean {
-  if (phrase.includes(' ')) return tokens.join(' ').includes(phrase);
+export function matchesPhrase(
+  tokens: readonly string[],
+  phrase: string,
+): boolean {
+  if (phrase.includes(" ")) return tokens.join(" ").includes(phrase);
   return tokens.includes(phrase);
 }
 
 /** Convert a duration to fractional days. Exported so trends and comparisons share one rule. */
 export function durationInDays(duration: Duration): number {
   switch (duration.unit) {
-    case 'MINUTES':
+    case "MINUTES":
       return duration.value / 1440;
-    case 'HOURS':
+    case "HOURS":
       return duration.value / 24;
-    case 'DAYS':
+    case "DAYS":
       return duration.value;
-    case 'WEEKS':
+    case "WEEKS":
       return duration.value * 7;
-    case 'MONTHS':
+    case "MONTHS":
       return duration.value * 30.4375;
-    case 'YEARS':
+    case "YEARS":
       return duration.value * 365.25;
   }
 }
@@ -68,14 +71,14 @@ export function parseDuration(text: string): Duration | undefined {
 
   for (let index = 0; index < tokens.length; index += 1) {
     const unitEntry = DURATION_UNIT_WORDS.find((candidate) =>
-      candidate.words.includes(tokens[index] ?? ''),
+      candidate.words.includes(tokens[index] ?? ""),
     );
     if (!unitEntry) continue;
 
     let value = 1;
     let verbatimStart = index;
     for (let back = index - 1; back >= Math.max(0, index - 3); back -= 1) {
-      const parsed = numberOf(tokens[back] ?? '');
+      const parsed = numberOf(tokens[back] ?? "");
       if (parsed !== undefined) {
         value = parsed;
         verbatimStart = back;
@@ -84,13 +87,15 @@ export function parseDuration(text: string): Duration | undefined {
     }
 
     const window = tokens.slice(Math.max(0, verbatimStart - 1), index + 1);
-    const approximate = window.some((token) => APPROXIMATION_WORDS.includes(token));
+    const approximate = window.some((token) =>
+      APPROXIMATION_WORDS.includes(token),
+    );
 
     const unit: DurationUnit = unitEntry.unit;
     return {
       value,
       unit,
-      verbatim: window.join(' '),
+      verbatim: window.join(" "),
       approximate,
     };
   }
@@ -105,7 +110,9 @@ export function parseDuration(text: string): Duration | undefined {
  * A number without a unit is returned *without* a unit, and the caller is required to supply one.
  * A quantity that silently acquires a default unit is how Fahrenheit readings become Celsius.
  */
-export function parseQuantity(text: string): { readonly value: number; readonly unit?: string } | undefined {
+export function parseQuantity(
+  text: string,
+): { readonly value: number; readonly unit?: string } | undefined {
   const match = text.match(/-?\d+(?:\.\d+)?/);
   if (!match) return undefined;
   const value = Number.parseFloat(match[0]);

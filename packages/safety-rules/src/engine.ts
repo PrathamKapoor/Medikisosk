@@ -17,13 +17,13 @@ import {
   EMPTY_TRIGGER_CONTEXT,
   evaluateTrigger,
   type TriggerContext,
-} from '@medikiosk/clinical-schema';
-import type { RuleEvaluationInput } from './types';
-import { CARDIO_RESPIRATORY_RULES } from './rules/cardio-respiratory';
-import { NEURO_INFECTION_RULES } from './rules/neuro-infection';
-import { BLEEDING_HAEMODYNAMIC_RULES } from './rules/bleeding-metabolic';
-import { ELECTROLYTE_SPECIAL_RULES } from './rules/electrolyte-special';
-import { RULE_SET_VERSION, type RedFlagHit, type RedFlagRule } from './types';
+} from "@medikiosk/clinical-schema";
+import type { RuleEvaluationInput } from "./types";
+import { CARDIO_RESPIRATORY_RULES } from "./rules/cardio-respiratory";
+import { NEURO_INFECTION_RULES } from "./rules/neuro-infection";
+import { BLEEDING_HAEMODYNAMIC_RULES } from "./rules/bleeding-metabolic";
+import { ELECTROLYTE_SPECIAL_RULES } from "./rules/electrolyte-special";
+import { RULE_SET_VERSION, type RedFlagHit, type RedFlagRule } from "./types";
 
 export const DEFAULT_RULES: readonly RedFlagRule[] = [
   ...CARDIO_RESPIRATORY_RULES,
@@ -35,9 +35,11 @@ export const DEFAULT_RULES: readonly RedFlagRule[] = [
 export const RULE_SET_SUMMARY = {
   version: RULE_SET_VERSION,
   ruleCount: DEFAULT_RULES.length,
-  redCount: DEFAULT_RULES.filter((rule) => rule.severity === 'RED' && !rule.advisoryOnly).length,
+  redCount: DEFAULT_RULES.filter(
+    (rule) => rule.severity === "RED" && !rule.advisoryOnly,
+  ).length,
   amberCount: DEFAULT_RULES.filter(
-    (rule) => rule.severity === 'AMBER' && !rule.advisoryOnly,
+    (rule) => rule.severity === "AMBER" && !rule.advisoryOnly,
   ).length,
   advisoryCount: DEFAULT_RULES.filter((rule) => rule.advisoryOnly).length,
 };
@@ -57,34 +59,41 @@ export function collectEvidenceFacts(input: RuleEvaluationInput): Set<string> {
   for (const code of input.symptomCodes) facts.add(code);
 
   for (const vital of input.vitalFacts) {
-    const key = vital.componentCode ? `${vital.code}:${vital.componentCode}` : vital.code;
+    const key = vital.componentCode
+      ? `${vital.code}:${vital.componentCode}`
+      : vital.code;
     facts.add(key);
     facts.add(vital.code);
   }
 
   for (const lab of input.labFacts) {
     facts.add(lab.testCode);
-    if (lab.flag === 'HIGH' || lab.flag === 'CRITICAL_HIGH') facts.add(`${lab.testCode}:HIGH`);
-    if (lab.flag === 'LOW' || lab.flag === 'CRITICAL_LOW') facts.add(`${lab.testCode}:LOW`);
+    if (lab.flag === "HIGH" || lab.flag === "CRITICAL_HIGH")
+      facts.add(`${lab.testCode}:HIGH`);
+    if (lab.flag === "LOW" || lab.flag === "CRITICAL_LOW")
+      facts.add(`${lab.testCode}:LOW`);
   }
 
   for (const code of input.conditionCodes) facts.add(code);
   for (const code of input.medicationCodes) facts.add(code);
   for (const code of input.allergyCodes) facts.add(code);
   for (const key of input.answeredYesQuestionKeys) facts.add(key);
-  if (input.pregnant) facts.add('MK-CON-014');
+  if (input.pregnant) facts.add("MK-CON-014");
   if (input.safetyCriticalUnresolvedQuestionKeys.length > 0) {
-    facts.add('SAFETY_CRITICAL_UNRESOLVED');
+    facts.add("SAFETY_CRITICAL_UNRESOLVED");
   }
 
   return facts;
 }
 
 /** Map the evaluation input onto the trigger expression context. */
-export function buildTriggerContext(input: RuleEvaluationInput): TriggerContext {
+export function buildTriggerContext(
+  input: RuleEvaluationInput,
+): TriggerContext {
   const symptomDurationDays: Record<string, number> = {};
   for (const symptom of input.symptomFacts) {
-    if (symptom.durationDays !== undefined) symptomDurationDays[symptom.code] = symptom.durationDays;
+    if (symptom.durationDays !== undefined)
+      symptomDurationDays[symptom.code] = symptom.durationDays;
   }
 
   const vitals: Record<string, number> = {};
@@ -92,22 +101,25 @@ export function buildTriggerContext(input: RuleEvaluationInput): TriggerContext 
     // Implausible readings are excluded from rule evaluation: a rule must not escalate a patient
     // on the basis of a reading the system itself believes is a data error.
     if (vital.implausible) continue;
-    const key = vital.componentCode ? `${vital.code}:${vital.componentCode}` : vital.code;
+    const key = vital.componentCode
+      ? `${vital.code}:${vital.componentCode}`
+      : vital.code;
     vitals[key] = vital.value;
     vitals[vital.code] = vital.value;
   }
 
   const labFlaggedHigh = input.labFacts
-    .filter((lab) => lab.flag === 'HIGH' || lab.flag === 'CRITICAL_HIGH')
+    .filter((lab) => lab.flag === "HIGH" || lab.flag === "CRITICAL_HIGH")
     .map((lab) => lab.testCode);
   const labFlaggedLow = input.labFacts
-    .filter((lab) => lab.flag === 'LOW' || lab.flag === 'CRITICAL_LOW')
+    .filter((lab) => lab.flag === "LOW" || lab.flag === "CRITICAL_LOW")
     .map((lab) => lab.testCode);
 
   const answeredYes: Record<string, boolean> = {};
   for (const key of input.answeredYesQuestionKeys) answeredYes[key] = true;
   const unanswered: Record<string, boolean> = {};
-  for (const key of input.safetyCriticalUnresolvedQuestionKeys) unanswered[key] = true;
+  for (const key of input.safetyCriticalUnresolvedQuestionKeys)
+    unanswered[key] = true;
 
   return {
     ...EMPTY_TRIGGER_CONTEXT,
@@ -130,7 +142,10 @@ export function buildTriggerContext(input: RuleEvaluationInput): TriggerContext 
 
 interface RuleOutcome {
   readonly hit?: RedFlagHit;
-  readonly evidenceGated?: { readonly identifier: string; readonly missing: readonly string[] };
+  readonly evidenceGated?: {
+    readonly identifier: string;
+    readonly missing: readonly string[];
+  };
   readonly ageSkipped?: { readonly identifier: string };
 }
 
@@ -143,18 +158,20 @@ function evaluateRule(
     if (context.ageYears === undefined) {
       return { ageSkipped: { identifier: rule.identifier } };
     }
-    if (rule.minAgeYears !== undefined && context.ageYears < rule.minAgeYears) return {};
-    if (rule.maxAgeYears !== undefined && context.ageYears > rule.maxAgeYears) return {};
+    if (rule.minAgeYears !== undefined && context.ageYears < rule.minAgeYears)
+      return {};
+    if (rule.maxAgeYears !== undefined && context.ageYears > rule.maxAgeYears)
+      return {};
   }
 
   // DATA_INCOMPLETE_SAFETY_001 is handled by the assessor, not here: its "trigger" is the presence
   // of unresolved safety questions, which is an input property rather than a clinical predicate.
-  if (rule.identifier === 'DATA_INCOMPLETE_SAFETY_001') return {};
+  if (rule.identifier === "DATA_INCOMPLETE_SAFETY_001") return {};
 
   if (!evaluateTrigger(rule.trigger, context)) return {};
 
   const missing = rule.evidenceRequired.filter(
-    (fact) => !facts.has(fact) && !facts.has(fact.split(':')[0] ?? fact),
+    (fact) => !facts.has(fact) && !facts.has(fact.split(":")[0] ?? fact),
   );
   if (missing.length > 0) {
     return { evidenceGated: { identifier: rule.identifier, missing } };

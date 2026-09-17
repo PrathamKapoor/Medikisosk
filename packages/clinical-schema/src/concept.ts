@@ -14,36 +14,36 @@
  *    mistranslated symptom term is a clinical error rather than a cosmetic one.
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 export const CONCEPT_CATEGORIES = [
-  'SYMPTOM',
-  'VITAL',
-  'LAB_TEST',
-  'MEDICATION',
-  'ALLERGY',
-  'CONDITION',
-  'PROCEDURE',
-  'HISTORY_FACT',
-  'AYUSH',
+  "SYMPTOM",
+  "VITAL",
+  "LAB_TEST",
+  "MEDICATION",
+  "ALLERGY",
+  "CONDITION",
+  "PROCEDURE",
+  "HISTORY_FACT",
+  "AYUSH",
 ] as const;
 
 export type ConceptCategory = (typeof CONCEPT_CATEGORIES)[number];
 
 export const BODY_SYSTEMS = [
-  'CARDIOVASCULAR',
-  'RESPIRATORY',
-  'GASTROINTESTINAL',
-  'NEUROLOGICAL',
-  'MUSCULOSKELETAL',
-  'GENITOURINARY',
-  'ENDOCRINE',
-  'DERMATOLOGICAL',
-  'PSYCHIATRIC',
-  'HAEMATOLOGICAL',
-  'OPHTHALMIC',
-  'ENT',
-  'GENERAL',
+  "CARDIOVASCULAR",
+  "RESPIRATORY",
+  "GASTROINTESTINAL",
+  "NEUROLOGICAL",
+  "MUSCULOSKELETAL",
+  "GENITOURINARY",
+  "ENDOCRINE",
+  "DERMATOLOGICAL",
+  "PSYCHIATRIC",
+  "HAEMATOLOGICAL",
+  "OPHTHALMIC",
+  "ENT",
+  "GENERAL",
 ] as const;
 
 export type BodySystem = (typeof BODY_SYSTEMS)[number];
@@ -114,17 +114,17 @@ export interface ConceptMatch {
  */
 export function foldForMatching(input: string): string {
   return input
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
 /** True when the string contains characters from a major Indic script. */
 export function containsNonLatinScript(input: string): boolean {
-  return /[\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF]/.test(
+  return /\p{Script=Devanagari}|\p{Script=Bengali}|\p{Script=Gurmukhi}|\p{Script=Gujarati}|\p{Script=Oriya}|\p{Script=Tamil}|\p{Script=Telugu}|\p{Script=Kannada}/u.test(
     input,
   );
 }

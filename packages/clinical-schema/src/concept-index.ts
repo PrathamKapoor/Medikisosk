@@ -6,7 +6,7 @@
  * provenance layer exists to prevent.
  */
 
-import { foldForMatching, type ClinicalConcept } from './concept';
+import { foldForMatching, type ClinicalConcept } from "./concept";
 
 export interface ConceptIndex {
   /** Folded synonym to the concepts it maps to. */
@@ -16,7 +16,9 @@ export interface ConceptIndex {
   readonly sortedSynonyms: readonly string[];
 }
 
-export function buildConceptIndex(concepts: readonly ClinicalConcept[]): ConceptIndex {
+export function buildConceptIndex(
+  concepts: readonly ClinicalConcept[],
+): ConceptIndex {
   const byText = new Map<string, ClinicalConcept[]>();
   const byCode = new Map<string, ClinicalConcept>();
 
@@ -31,7 +33,8 @@ export function buildConceptIndex(concepts: readonly ClinicalConcept[]): Concept
       if (folded.length === 0) continue;
       const existing = byText.get(folded);
       if (existing) {
-        if (!existing.some((item) => item.code === concept.code)) existing.push(concept);
+        if (!existing.some((item) => item.code === concept.code))
+          existing.push(concept);
       } else {
         byText.set(folded, [concept]);
       }
@@ -43,14 +46,17 @@ export function buildConceptIndex(concepts: readonly ClinicalConcept[]): Concept
 }
 
 /** Look a concept up by exact code. */
-export function conceptByCode(index: ConceptIndex, code: string): ClinicalConcept | undefined {
+export function conceptByCode(
+  index: ConceptIndex,
+  code: string,
+): ClinicalConcept | undefined {
   return index.byCode.get(code);
 }
 
 /** All concepts in a category, in stable code order. */
 export function conceptsInCategory(
   index: ConceptIndex,
-  category: ClinicalConcept['category'],
+  category: ClinicalConcept["category"],
 ): readonly ClinicalConcept[] {
   return [...index.byCode.values()]
     .filter((concept) => concept.category === category)

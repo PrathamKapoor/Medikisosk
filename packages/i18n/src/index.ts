@@ -5,8 +5,9 @@
  * device, and a translation layer that can fail to load is a translation layer
  * that can block a patient interview.
  */
-export * from './types';
-export * from './catalogue';
-export * from './translate';
-export * from './clinical-terms';
-export * from './verify';
+export * from "./types";
+export * from "./catalogue";
+export * from "./translate";
+export * from "./clinical-terms";
+export * from "./verify";
+export * from "./registration";

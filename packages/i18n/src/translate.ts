@@ -1,5 +1,10 @@
-import { CATALOGUES } from './catalogue';
-import { DEFAULT_LOCALE, LOCALE_CODES, type Catalogue, type LocaleCode } from './types';
+import { CATALOGUES } from "./catalogue";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_CODES,
+  type Catalogue,
+  type LocaleCode,
+} from "./types";
 
 export type TranslationKey = string;
 
@@ -19,8 +24,8 @@ export interface TranslateOptions {
  * translation is visually obvious to whoever is standing at the kiosk, instead
  * of silently rendering as a blank button the patient cannot act on.
  */
-const MISSING_OPEN = '⟦';
-const MISSING_CLOSE = '⟧';
+const MISSING_OPEN = "⟦";
+const MISSING_CLOSE = "⟧";
 
 const PARAM_PATTERN = /\{\{(\w+)\}\}/g;
 
@@ -36,7 +41,7 @@ function rawLookup(locale: LocaleCode, key: string): string | undefined {
   const value = catalogue[key];
   // A blank string is treated as missing: an empty button label is worse than a
   // visible key marker because nobody notices it during review.
-  return typeof value === 'string' && value.length > 0 ? value : undefined;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
 }
 
 function formatNumber(
@@ -67,14 +72,19 @@ function interpolate(
   if (!params) {
     return template;
   }
-  return template.replace(PARAM_PATTERN, (match: string, name: string): string => {
-    const value = params[name];
-    if (value === undefined) {
-      // Leave the placeholder visible rather than printing "undefined".
-      return match;
-    }
-    return typeof value === 'number' ? formatNumber(value, locale, cache) : String(value);
-  });
+  return template.replace(
+    PARAM_PATTERN,
+    (match: string, name: string): string => {
+      const value = params[name];
+      if (value === undefined) {
+        // Leave the placeholder visible rather than printing "undefined".
+        return match;
+      }
+      return typeof value === "number"
+        ? formatNumber(value, locale, cache)
+        : String(value);
+    },
+  );
 }
 
 /**
@@ -92,13 +102,17 @@ export function createTranslator(
   const numberCache = new Map<string, Intl.NumberFormat>();
 
   return (key: string, params?: Record<string, string | number>): string => {
-    if (typeof key !== 'string' || key.length === 0) {
+    if (typeof key !== "string" || key.length === 0) {
       return markers(String(key));
     }
     try {
       let template = rawLookup(locale, key);
 
-      if (template === undefined && locale !== DEFAULT_LOCALE && fallbackToEnglish) {
+      if (
+        template === undefined &&
+        locale !== DEFAULT_LOCALE &&
+        fallbackToEnglish
+      ) {
         if (options.onMissing) {
           try {
             options.onMissing(key, locale);
@@ -141,8 +155,12 @@ const PROVISIONAL_LOCALES: readonly LocaleCode[] = LOCALE_CODES.filter(
 /** Keys defined in English but absent (or blank) in the given locale. */
 export function missingKeys(locale: LocaleCode): readonly string[] {
   const english = keysOf(DEFAULT_LOCALE);
-  const missing = english.filter((key): boolean => rawLookup(locale, key) === undefined);
-  const extras = keysOf(locale).filter((key): boolean => !english.includes(key));
+  const missing = english.filter(
+    (key): boolean => rawLookup(locale, key) === undefined,
+  );
+  const extras = keysOf(locale).filter(
+    (key): boolean => !english.includes(key),
+  );
   // Extras are appended so a single call answers "what is wrong with this
   // locale?", but they are reported by extraKeys() with a clearer name.
   return [...missing, ...extras].sort();
@@ -170,15 +188,13 @@ export interface CatalogueStats {
  */
 export function catalogueStats(): readonly CatalogueStats[] {
   const provisional = new Set<LocaleCode>(PROVISIONAL_LOCALES);
-  return LOCALE_CODES.map(
-    (locale): CatalogueStats => ({
-      locale,
-      keyCount: keysOf(locale).length,
-      missing: missingKeys(locale).length - extraKeys(locale).length,
-      extra: extraKeys(locale).length,
-      provisional: provisional.has(locale),
-    }),
-  );
+  return LOCALE_CODES.map((locale): CatalogueStats => ({
+    locale,
+    keyCount: keysOf(locale).length,
+    missing: missingKeys(locale).length - extraKeys(locale).length,
+    extra: extraKeys(locale).length,
+    provisional: provisional.has(locale),
+  }));
 }
 
 /**

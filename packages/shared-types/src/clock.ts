@@ -68,7 +68,11 @@ export function parseIso(value: string): Date {
 
 /** Whole days between two instants, ignoring time of day. Negative when `to` precedes `from`. */
 export function daysBetween(from: Date, to: Date): number {
-  const a = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate());
+  const a = Date.UTC(
+    from.getUTCFullYear(),
+    from.getUTCMonth(),
+    from.getUTCDate(),
+  );
   const b = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
   return Math.round((b - a) / 86_400_000);
 }

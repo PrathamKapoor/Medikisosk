@@ -10,11 +10,11 @@
  * half-initialised state.
  */
 
-import dotenv from 'dotenv';
-import { loadConfig } from './config/env';
-import { createLogger } from './platform/logger';
-import { createDatabase } from './db/kysely';
-import { buildApp } from './app';
+import dotenv from "dotenv";
+import { loadConfig } from "./config/env";
+import { createLogger } from "./platform/logger";
+import { createDatabase } from "./db/kysely";
+import { buildApp } from "./app";
 
 async function main(): Promise<void> {
   // Loaded before configuration is read. Missing `.env` is not an error: in staging and production the
@@ -25,19 +25,19 @@ async function main(): Promise<void> {
   const logger = createLogger(config);
 
   logger.info(
-    { route: 'boot' },
+    { route: "boot" },
     `MediKiosk API starting in ${config.MEDIKIOSK_DEPLOYMENT_MODE} mode on ${config.MEDIKIOSK_DB_DIALECT}`,
   );
 
   // Mocks are announced at every boot. An operator should never have to read the config to learn that
   // identity or OCR is a deterministic stand-in.
   for (const warning of warnings) {
-    logger.warn({ route: 'boot' }, warning);
+    logger.warn({ route: "boot" }, warning);
   }
   if (config.usingDevelopmentSecrets) {
     logger.warn(
-      { route: 'boot' },
-      'Development default secrets are in use. This is acceptable locally only; production refuses to start with them.',
+      { route: "boot" },
+      "Development default secrets are in use. This is acceptable locally only; production refuses to start with them.",
     );
   }
 
@@ -45,27 +45,30 @@ async function main(): Promise<void> {
   const app = await buildApp({ config, db: handle.db, logger });
 
   const shutdown = async (signal: string): Promise<void> => {
-    logger.info({ route: 'shutdown' }, `Received ${signal}. Closing the server.`);
+    logger.info(
+      { route: "shutdown" },
+      `Received ${signal}. Closing the server.`,
+    );
     try {
       await app.close();
       await handle.destroy();
-      logger.info({ route: 'shutdown' }, 'Shutdown complete.');
+      logger.info({ route: "shutdown" }, "Shutdown complete.");
       process.exit(0);
     } catch (error) {
-      logger.error({ route: 'shutdown' }, 'Shutdown failed', {
-        reason: error instanceof Error ? error.message : 'unknown',
+      logger.error({ route: "shutdown" }, "Shutdown failed", {
+        reason: error instanceof Error ? error.message : "unknown",
       });
       process.exit(1);
     }
   };
 
-  process.on('SIGINT', () => void shutdown('SIGINT'));
-  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
   await app.listen({ port: config.API_PORT, host: config.API_HOST });
 
   logger.info(
-    { route: 'boot' },
+    { route: "boot" },
     `Listening on http://${config.API_HOST}:${config.API_PORT} — health at /health, readiness at /ready`,
   );
 }

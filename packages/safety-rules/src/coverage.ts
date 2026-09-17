@@ -6,8 +6,8 @@
  * in the admin console instead of being discovered during an incident.
  */
 
-import { RED_FLAG_RELEVANT_CONCEPT_CODES } from '@medikiosk/clinical-schema';
-import type { RedFlagRule } from './types';
+import { RED_FLAG_RELEVANT_CONCEPT_CODES } from "@medikiosk/clinical-schema";
+import type { RedFlagRule } from "./types";
 
 export interface CoverageEntry {
   readonly watchedFact: string;
@@ -15,7 +15,9 @@ export interface CoverageEntry {
 }
 
 /** For each distinct fact in any rule's `evidenceRequired`, list the rules watching it. */
-export function ruleSetCoverage(rules: readonly RedFlagRule[]): readonly CoverageEntry[] {
+export function ruleSetCoverage(
+  rules: readonly RedFlagRule[],
+): readonly CoverageEntry[] {
   const byFact = new Map<string, string[]>();
   for (const rule of rules) {
     for (const fact of rule.evidenceRequired) {
@@ -54,16 +56,20 @@ export function coverageSummary(rules: readonly RedFlagRule[]): string {
   const lines = [
     `Rule set covers ${coverage.length} distinct facts.`,
     ...coverage.map(
-      (entry) => `  ${entry.watchedFact}: ${entry.ruleIdentifiers.join(', ')}`,
+      (entry) => `  ${entry.watchedFact}: ${entry.ruleIdentifiers.join(", ")}`,
     ),
   ];
   if (unwatched.length === 0) {
-    lines.push('Every red-flag-relevant concept is watched by at least one rule.');
-  } else {
-    lines.push(`UNWATCHED safety-relevant facts (${unwatched.length}): ${unwatched.join(', ')}.`);
     lines.push(
-      'Each unwatched fact is a silent gap. Add a rule, or record a clinical rationale for why the fact needs none.',
+      "Every red-flag-relevant concept is watched by at least one rule.",
+    );
+  } else {
+    lines.push(
+      `UNWATCHED safety-relevant facts (${unwatched.length}): ${unwatched.join(", ")}.`,
+    );
+    lines.push(
+      "Each unwatched fact is a silent gap. Add a rule, or record a clinical rationale for why the fact needs none.",
     );
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }

@@ -9,8 +9,12 @@
  * hand-rolled comparisons are exactly where timing attacks come from.
  */
 
-import bcrypt from 'bcryptjs';
-import { randomBytes, randomFillSync, timingSafeEqual as nodeTimingSafeEqual } from 'node:crypto';
+import bcrypt from "bcryptjs";
+import {
+  randomBytes,
+  randomFillSync,
+  timingSafeEqual as nodeTimingSafeEqual,
+} from "node:crypto";
 
 /** bcrypt cost. 12 balances security against the infrequent-login workload of an OPD. */
 export const BCRYPT_COST = 12;
@@ -20,9 +24,12 @@ export interface HashResult {
   readonly cost: number;
 }
 
-export async function hashPassword(plain: string, pepper: string): Promise<HashResult> {
+export async function hashPassword(
+  plain: string,
+  pepper: string,
+): Promise<HashResult> {
   if (plain.length < 8) {
-    throw new RangeError('Password must be at least 8 characters.');
+    throw new RangeError("Password must be at least 8 characters.");
   }
   const salt = await bcrypt.genSalt(BCRYPT_COST);
   const hash = await bcrypt.hash(fold(plain, pepper), salt);
@@ -60,14 +67,14 @@ function fold(plain: string, pepper: string): string {
  * base64url form is shell-safe and needs no quoting.
  */
 export function generateSecret(bytes = 48): string {
-  return randomBytes(bytes).toString('base64url');
+  return randomBytes(bytes).toString("base64url");
 }
 
 /** Mask a sensitive identifier for logs and audit rows, e.g. an ABHA number. */
 export function maskIdentifier(value: string, visible = 4): string {
-  if (value.length <= visible) return '*'.repeat(value.length);
+  if (value.length <= visible) return "*".repeat(value.length);
   const head = value.slice(0, value.length - visible);
-  return `${'*'.repeat(Math.min(8, head.length))}${value.slice(-visible)}`;
+  return `${"*".repeat(Math.min(8, head.length))}${value.slice(-visible)}`;
 }
 
 /** Mask a display name for a kiosk, so a waiting room does not read out a full name. */
@@ -75,8 +82,10 @@ export function maskDisplayName(value: string): string {
   return value
     .split(/\s+/)
     .filter(Boolean)
-    .map((part) => `${part[0] ?? '*'}${'*'.repeat(Math.max(0, part.length - 1))}`)
-    .join(' ');
+    .map(
+      (part) => `${part[0] ?? "*"}${"*".repeat(Math.max(0, part.length - 1))}`,
+    )
+    .join(" ");
 }
 
 /**
@@ -87,8 +96,8 @@ export function maskDisplayName(value: string): string {
  * a real, if modest, information leak.
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a, 'utf8');
-  const right = Buffer.from(b, 'utf8');
+  const left = Buffer.from(a, "utf8");
+  const right = Buffer.from(b, "utf8");
   if (left.length !== right.length) {
     // Burn comparable time so the length itself is not disclosed through timing either, then reject.
     randomFillSync(Buffer.alloc(Math.max(left.length, right.length, 16)));
@@ -99,5 +108,5 @@ export function timingSafeEqual(a: string, b: string): boolean {
 
 /** Kiosk device credential generation. */
 export function generateDeviceToken(): string {
-  return randomBytes(32).toString('base64url');
+  return randomBytes(32).toString("base64url");
 }

@@ -6,25 +6,28 @@
  * lookup exists only for the one endpoint that legitimately runs before authentication.
  */
 
-import type { AppDatabase } from '../../db/kysely';
-import type { TenantRow } from '../../db/schema';
+import type { AppDatabase } from "../../db/kysely";
+import type { TenantRow } from "../../db/schema";
 
 export interface TenantBranding {
   readonly primaryColor: string;
   readonly logoText: string;
 }
 
-const DEFAULT_BRANDING: TenantBranding = { primaryColor: '#0F766E', logoText: 'MediKiosk' };
+const DEFAULT_BRANDING: TenantBranding = {
+  primaryColor: "#0F766E",
+  logoText: "MediKiosk",
+};
 
 export async function findTenantBySlug(
   db: AppDatabase,
   slug: string,
 ): Promise<TenantRow | undefined> {
   return db
-    .selectFrom('tenants')
+    .selectFrom("tenants")
     .selectAll()
-    .where('slug', '=', slug)
-    .where('deletedAt', 'is', null)
+    .where("slug", "=", slug)
+    .where("deletedAt", "is", null)
     .executeTakeFirst();
 }
 
@@ -33,8 +36,14 @@ export function parseBranding(brandingJson: string): TenantBranding {
   try {
     const parsed = JSON.parse(brandingJson) as Partial<TenantBranding>;
     return {
-      primaryColor: typeof parsed.primaryColor === 'string' ? parsed.primaryColor : DEFAULT_BRANDING.primaryColor,
-      logoText: typeof parsed.logoText === 'string' ? parsed.logoText : DEFAULT_BRANDING.logoText,
+      primaryColor:
+        typeof parsed.primaryColor === "string"
+          ? parsed.primaryColor
+          : DEFAULT_BRANDING.primaryColor,
+      logoText:
+        typeof parsed.logoText === "string"
+          ? parsed.logoText
+          : DEFAULT_BRANDING.logoText,
     };
   } catch {
     return DEFAULT_BRANDING;
@@ -45,10 +54,12 @@ export function parseBranding(brandingJson: string): TenantBranding {
 export function parseEnabledLocales(localesJson: string): readonly string[] {
   try {
     const parsed = JSON.parse(localesJson) as unknown;
-    if (!Array.isArray(parsed)) return ['en-IN'];
-    const locales = parsed.filter((entry): entry is string => typeof entry === 'string');
-    return locales.length > 0 ? locales : ['en-IN'];
+    if (!Array.isArray(parsed)) return ["en-IN"];
+    const locales = parsed.filter(
+      (entry): entry is string => typeof entry === "string",
+    );
+    return locales.length > 0 ? locales : ["en-IN"];
   } catch {
-    return ['en-IN'];
+    return ["en-IN"];
   }
 }

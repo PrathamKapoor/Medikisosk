@@ -8,68 +8,68 @@
 
 export const ERROR_CODES = [
   // Generic
-  'INTERNAL_ERROR',
-  'VALIDATION_FAILED',
-  'NOT_FOUND',
-  'CONFLICT',
-  'RATE_LIMITED',
-  'PAYLOAD_TOO_LARGE',
-  'UNSUPPORTED_MEDIA_TYPE',
-  'SERVICE_UNAVAILABLE',
-  'DEPENDENCY_UNAVAILABLE',
+  "INTERNAL_ERROR",
+  "VALIDATION_FAILED",
+  "NOT_FOUND",
+  "CONFLICT",
+  "RATE_LIMITED",
+  "PAYLOAD_TOO_LARGE",
+  "UNSUPPORTED_MEDIA_TYPE",
+  "SERVICE_UNAVAILABLE",
+  "DEPENDENCY_UNAVAILABLE",
 
   // Auth and authorisation
-  'UNAUTHENTICATED',
-  'FORBIDDEN',
-  'SESSION_EXPIRED',
-  'INVALID_CREDENTIALS',
-  'ROLE_NOT_PERMITTED',
+  "UNAUTHENTICATED",
+  "FORBIDDEN",
+  "SESSION_EXPIRED",
+  "INVALID_CREDENTIALS",
+  "ROLE_NOT_PERMITTED",
 
   // Consent and privacy. These block processing, so they form their own group.
-  'CONSENT_MISSING',
-  'CONSENT_REVOKED',
-  'CONSENT_EXPIRED',
-  'CONSENT_PURPOSE_NOT_PERMITTED',
-  'RETENTION_WINDOW_ELAPSED',
+  "CONSENT_MISSING",
+  "CONSENT_REVOKED",
+  "CONSENT_EXPIRED",
+  "CONSENT_PURPOSE_NOT_PERMITTED",
+  "RETENTION_WINDOW_ELAPSED",
 
   // Identity
-  'IDENTITY_PROVIDER_UNAVAILABLE',
-  'IDENTITY_OTP_EXPIRED',
-  'IDENTITY_OTP_INVALID',
-  'IDENTITY_OTP_ATTEMPTS_EXCEEDED',
-  'IDENTITY_NOT_VERIFIED',
-  'IDENTITY_ALREADY_LINKED',
+  "IDENTITY_PROVIDER_UNAVAILABLE",
+  "IDENTITY_OTP_EXPIRED",
+  "IDENTITY_OTP_INVALID",
+  "IDENTITY_OTP_ATTEMPTS_EXCEEDED",
+  "IDENTITY_NOT_VERIFIED",
+  "IDENTITY_ALREADY_LINKED",
 
   // Encounter and interview
-  'ENCOUNTER_ALREADY_SUBMITTED',
-  'ENCOUNTER_NOT_EDITABLE',
-  'INTERVIEW_SESSION_NOT_ACTIVE',
-  'QUESTION_NOT_IN_PATHWAY',
+  "ENCOUNTER_ALREADY_SUBMITTED",
+  "ENCOUNTER_NOT_EDITABLE",
+  "INTERVIEW_SESSION_NOT_ACTIVE",
+  "QUESTION_NOT_IN_PATHWAY",
 
   // Documents
-  'DOCUMENT_QUALITY_INSUFFICIENT',
-  'DOCUMENT_TYPE_UNSUPPORTED',
-  'DOCUMENT_MALFORMED',
-  'DOCUMENT_EXTRACTION_FAILED',
+  "DOCUMENT_QUALITY_INSUFFICIENT",
+  "DOCUMENT_TYPE_UNSUPPORTED",
+  "DOCUMENT_MALFORMED",
+  "DOCUMENT_EXTRACTION_FAILED",
 
   // AI providers
-  'AI_PROVIDER_DISABLED',
-  'AI_PROVIDER_TIMEOUT',
-  'AI_OUTPUT_INVALID',
-  'AI_OUTPUT_UNGROUNDED',
+  "AI_PROVIDER_DISABLED",
+  "AI_PROVIDER_TIMEOUT",
+  "AI_OUTPUT_INVALID",
+  "AI_OUTPUT_UNGROUNDED",
 
   // Safety
-  'TRIAGE_RULE_SET_INVALID',
-  'TRIAGE_OVERRIDE_REQUIRES_CLINICIAN',
+  "TRIAGE_RULE_SET_INVALID",
+  "TRIAGE_OVERRIDE_REQUIRES_CLINICIAN",
 
   // Interoperability
-  'FHIR_VALIDATION_FAILED',
-  'ABDM_NOT_CONFIGURED',
-  'SYNC_ENDPOINT_UNAVAILABLE',
+  "FHIR_VALIDATION_FAILED",
+  "ABDM_NOT_CONFIGURED",
+  "SYNC_ENDPOINT_UNAVAILABLE",
 
   // Idempotency and feature gating
-  'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD',
-  'FEATURE_DISABLED',
+  "IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD",
+  "FEATURE_DISABLED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -131,9 +131,13 @@ export class MediKioskError extends Error {
   readonly status: number;
   readonly details?: Record<string, unknown>;
 
-  constructor(code: ErrorCode, message: string, details?: Record<string, unknown>) {
+  constructor(
+    code: ErrorCode,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
     super(message);
-    this.name = 'MediKioskError';
+    this.name = "MediKioskError";
     this.code = code;
     this.status = ERROR_STATUS[code];
     this.details = details;
@@ -149,49 +153,60 @@ export class MediKioskError extends Error {
    */
   static fromUnexpected(
     _cause: unknown,
-    message = 'An unexpected internal error occurred.',
+    message = "An unexpected internal error occurred.",
   ): MediKioskError {
-    return new MediKioskError('INTERNAL_ERROR', message);
+    return new MediKioskError("INTERNAL_ERROR", message);
   }
 }
 
 /** Convenience constructors for the errors raised most often. */
 export const errors = {
   notFound: (what: string, id?: string) =>
-    new MediKioskError('NOT_FOUND', id ? `${what} ${id} was not found.` : `${what} was not found.`),
+    new MediKioskError(
+      "NOT_FOUND",
+      id ? `${what} ${id} was not found.` : `${what} was not found.`,
+    ),
   validation: (message: string, details?: Record<string, unknown>) =>
-    new MediKioskError('VALIDATION_FAILED', message, details),
+    new MediKioskError("VALIDATION_FAILED", message, details),
   consentMissing: (purpose: string) =>
     new MediKioskError(
-      'CONSENT_MISSING',
+      "CONSENT_MISSING",
       `Consent is required before processing data for purpose "${purpose}".`,
       { purpose },
     ),
   consentRevoked: (purpose: string) =>
     new MediKioskError(
-      'CONSENT_REVOKED',
+      "CONSENT_REVOKED",
       `Consent for purpose "${purpose}" was withdrawn by the patient.`,
       { purpose },
     ),
-  forbidden: (message = 'You do not have permission to perform this action.') =>
-    new MediKioskError('FORBIDDEN', message),
-  unauthenticated: (message = 'Authentication is required.') =>
-    new MediKioskError('UNAUTHENTICATED', message),
+  forbidden: (message = "You do not have permission to perform this action.") =>
+    new MediKioskError("FORBIDDEN", message),
+  unauthenticated: (message = "Authentication is required.") =>
+    new MediKioskError("UNAUTHENTICATED", message),
   conflict: (message: string, details?: Record<string, unknown>) =>
-    new MediKioskError('CONFLICT', message, details),
+    new MediKioskError("CONFLICT", message, details),
   aiDisabled: (capability: string) =>
     new MediKioskError(
-      'AI_PROVIDER_DISABLED',
+      "AI_PROVIDER_DISABLED",
       `The ${capability} capability is disabled for this installation.`,
       { capability },
     ),
   featureDisabled: (flag: string) =>
-    new MediKioskError('FEATURE_DISABLED', 'This capability is not enabled for this hospital.', {
-      flag,
-    }),
+    new MediKioskError(
+      "FEATURE_DISABLED",
+      "This capability is not enabled for this hospital.",
+      {
+        flag,
+      },
+    ),
   dependency: (dependency: string, message: string) =>
-    new MediKioskError('DEPENDENCY_UNAVAILABLE', `${dependency} is currently unavailable.`, {
-      dependency,
-      reason: message,
-    }),
+    new MediKioskError(
+      "DEPENDENCY_UNAVAILABLE",
+      `${dependency} is currently unavailable.`,
+      {
+        dependency,
+        reason: message,
+      },
+    ),
 };

@@ -10,16 +10,21 @@
  * boolean. "No known allergies" is an explicitly recorded and confirmed fact, not a default.
  */
 
-import type { ClinicalConcept } from '../concept';
+import type { ClinicalConcept } from "../concept";
 
-export const ALLERGY_CATEGORIES = ['DRUG', 'FOOD', 'ENVIRONMENTAL', 'OTHER'] as const;
+export const ALLERGY_CATEGORIES = [
+  "DRUG",
+  "FOOD",
+  "ENVIRONMENTAL",
+  "OTHER",
+] as const;
 export type AllergyCategory = (typeof ALLERGY_CATEGORIES)[number];
 
 export const ALLERGY_CATEGORY_LABELS: Record<AllergyCategory, string> = {
-  DRUG: 'Medicine',
-  FOOD: 'Food',
-  ENVIRONMENTAL: 'Environmental',
-  OTHER: 'Other',
+  DRUG: "Medicine",
+  FOOD: "Food",
+  ENVIRONMENTAL: "Environmental",
+  OTHER: "Other",
 };
 
 /**
@@ -30,24 +35,30 @@ export const ALLERGY_CATEGORY_LABELS: Record<AllergyCategory, string> = {
  * `NOT_ASKED` as safe is precisely the error this enum exists to make impossible.
  */
 export const ALLERGY_STATUSES = [
-  'NOT_ASKED',
-  'CONFIRMED_NO_KNOWN_ALLERGIES',
-  'HAS_ALLERGIES',
-  'PATIENT_UNSURE',
-  'PATIENT_DECLINED',
+  "NOT_ASKED",
+  "CONFIRMED_NO_KNOWN_ALLERGIES",
+  "HAS_ALLERGIES",
+  "PATIENT_UNSURE",
+  "PATIENT_DECLINED",
 ] as const;
 export type AllergyStatus = (typeof ALLERGY_STATUSES)[number];
 
 export const ALLERGY_STATUS_LABELS: Record<AllergyStatus, string> = {
-  NOT_ASKED: 'Not asked',
-  CONFIRMED_NO_KNOWN_ALLERGIES: 'No known allergies',
-  HAS_ALLERGIES: 'Allergies recorded',
-  PATIENT_UNSURE: 'Patient unsure',
-  PATIENT_DECLINED: 'Patient declined to answer',
+  NOT_ASKED: "Not asked",
+  CONFIRMED_NO_KNOWN_ALLERGIES: "No known allergies",
+  HAS_ALLERGIES: "Allergies recorded",
+  PATIENT_UNSURE: "Patient unsure",
+  PATIENT_DECLINED: "Patient declined to answer",
 };
 
 /** Reaction severity, kept separate from the presence of the allergy itself. */
-export const REACTION_SEVERITIES = ['MILD', 'MODERATE', 'SEVERE', 'ANAPHYLAXIS', 'UNKNOWN'] as const;
+export const REACTION_SEVERITIES = [
+  "MILD",
+  "MODERATE",
+  "SEVERE",
+  "ANAPHYLAXIS",
+  "UNKNOWN",
+] as const;
 export type ReactionSeverity = (typeof REACTION_SEVERITIES)[number];
 
 function allergy(
@@ -59,7 +70,7 @@ function allergy(
 ): ClinicalConcept {
   return {
     code,
-    category: 'ALLERGY',
+    category: "ALLERGY",
     display,
     synonyms: [...synonyms],
     standardCoding: [],
@@ -72,24 +83,123 @@ function allergy(
 }
 
 export const ALLERGY_CONCEPTS: readonly ClinicalConcept[] = [
-  allergy('MK-ALG-001', 'Penicillin', 'DRUG', ['penicillin', 'penicillin allergy', 'पेनिसिलिन'], { redFlagRelevant: true }),
-  allergy('MK-ALG-002', 'Sulfa drugs', 'DRUG', ['sulfa', 'sulphonamide', 'sulfamethoxazole', 'cotrimoxazole allergy'], { redFlagRelevant: true }),
-  allergy('MK-ALG-003', 'Aspirin or NSAID', 'DRUG', ['aspirin allergy', 'nsaid allergy', 'ibuprofen allergy', 'diclofenac allergy'], { redFlagRelevant: true }),
-  allergy('MK-ALG-004', 'Cephalosporins', 'DRUG', ['cephalosporin', 'ceftriaxone allergy', 'cefixime allergy'], { redFlagRelevant: true }),
-  allergy('MK-ALG-005', 'Quinolones', 'DRUG', ['quinolone', 'ciprofloxacin allergy', 'levofloxacin allergy'], { redFlagRelevant: true }),
-  allergy('MK-ALG-006', 'Iodine contrast', 'DRUG', ['iodine contrast', 'contrast dye allergy', 'radiocontrast allergy'], { redFlagRelevant: true }),
-  allergy('MK-ALG-007', 'Peanut', 'FOOD', ['peanut', 'groundnut', 'moongphali', 'मूंगफली'], { redFlagRelevant: true }),
-  allergy('MK-ALG-008', 'Tree nuts', 'FOOD', ['tree nuts', 'cashew', 'almond', 'walnut', 'kaju', 'बादाम'], { redFlagRelevant: true }),
-  allergy('MK-ALG-009', 'Seafood or shellfish', 'FOOD', ['seafood', 'shellfish', 'fish allergy', 'prawn', 'machhli'], { redFlagRelevant: true }),
-  allergy('MK-ALG-010', 'Egg', 'FOOD', ['egg allergy', 'anda', 'अंडा'], { redFlagRelevant: true }),
-  allergy('MK-ALG-011', 'Milk protein', 'FOOD', ['milk allergy', 'dairy allergy', 'doodh', 'दूध'], { redFlagRelevant: true }),
-  allergy('MK-ALG-012', 'Soy', 'FOOD', ['soy allergy', 'soya'], {}),
-  allergy('MK-ALG-013', 'Wheat or gluten', 'FOOD', ['wheat allergy', 'gluten allergy', 'gehun', 'गेहूं'], {}),
-  allergy('MK-ALG-014', 'House dust mite', 'ENVIRONMENTAL', ['dust allergy', 'house dust mite', 'dhool se allergy', 'धूल से एलर्जी'], {}),
-  allergy('MK-ALG-015', 'Pollen', 'ENVIRONMENTAL', ['pollen allergy', 'seasonal allergy', 'parag'], {}),
-  allergy('MK-ALG-016', 'Mould', 'ENVIRONMENTAL', ['mould allergy', 'mold allergy', 'fungal allergy'], {}),
-  allergy('MK-ALG-017', 'Insect sting', 'ENVIRONMENTAL', ['insect sting', 'bee sting', 'wasp sting'], { redFlagRelevant: true }),
-  allergy('MK-ALG-018', 'Latex', 'OTHER', ['latex allergy', 'rubber allergy'], { redFlagRelevant: true }),
+  allergy(
+    "MK-ALG-001",
+    "Penicillin",
+    "DRUG",
+    ["penicillin", "penicillin allergy", "पेनिसिलिन"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-002",
+    "Sulfa drugs",
+    "DRUG",
+    ["sulfa", "sulphonamide", "sulfamethoxazole", "cotrimoxazole allergy"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-003",
+    "Aspirin or NSAID",
+    "DRUG",
+    [
+      "aspirin allergy",
+      "nsaid allergy",
+      "ibuprofen allergy",
+      "diclofenac allergy",
+    ],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-004",
+    "Cephalosporins",
+    "DRUG",
+    ["cephalosporin", "ceftriaxone allergy", "cefixime allergy"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-005",
+    "Quinolones",
+    "DRUG",
+    ["quinolone", "ciprofloxacin allergy", "levofloxacin allergy"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-006",
+    "Iodine contrast",
+    "DRUG",
+    ["iodine contrast", "contrast dye allergy", "radiocontrast allergy"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-007",
+    "Peanut",
+    "FOOD",
+    ["peanut", "groundnut", "moongphali", "मूंगफली"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-008",
+    "Tree nuts",
+    "FOOD",
+    ["tree nuts", "cashew", "almond", "walnut", "kaju", "बादाम"],
+    { redFlagRelevant: true },
+  ),
+  allergy(
+    "MK-ALG-009",
+    "Seafood or shellfish",
+    "FOOD",
+    ["seafood", "shellfish", "fish allergy", "prawn", "machhli"],
+    { redFlagRelevant: true },
+  ),
+  allergy("MK-ALG-010", "Egg", "FOOD", ["egg allergy", "anda", "अंडा"], {
+    redFlagRelevant: true,
+  }),
+  allergy(
+    "MK-ALG-011",
+    "Milk protein",
+    "FOOD",
+    ["milk allergy", "dairy allergy", "doodh", "दूध"],
+    { redFlagRelevant: true },
+  ),
+  allergy("MK-ALG-012", "Soy", "FOOD", ["soy allergy", "soya"], {}),
+  allergy(
+    "MK-ALG-013",
+    "Wheat or gluten",
+    "FOOD",
+    ["wheat allergy", "gluten allergy", "gehun", "गेहूं"],
+    {},
+  ),
+  allergy(
+    "MK-ALG-014",
+    "House dust mite",
+    "ENVIRONMENTAL",
+    ["dust allergy", "house dust mite", "dhool se allergy", "धूल से एलर्जी"],
+    {},
+  ),
+  allergy(
+    "MK-ALG-015",
+    "Pollen",
+    "ENVIRONMENTAL",
+    ["pollen allergy", "seasonal allergy", "parag"],
+    {},
+  ),
+  allergy(
+    "MK-ALG-016",
+    "Mould",
+    "ENVIRONMENTAL",
+    ["mould allergy", "mold allergy", "fungal allergy"],
+    {},
+  ),
+  allergy(
+    "MK-ALG-017",
+    "Insect sting",
+    "ENVIRONMENTAL",
+    ["insect sting", "bee sting", "wasp sting"],
+    { redFlagRelevant: true },
+  ),
+  allergy("MK-ALG-018", "Latex", "OTHER", ["latex allergy", "rubber allergy"], {
+    redFlagRelevant: true,
+  }),
 ];
 
 /**
@@ -105,18 +215,23 @@ export const CROSS_REACTIVITY_NOTES: readonly {
   readonly note: string;
 }[] = [
   {
-    allergenCode: 'MK-ALG-001',
-    relatedMedicationCodes: ['MK-MED-020', 'MK-MED-021', 'MK-MED-022', 'MK-MED-023'],
-    note: 'Recorded penicillin allergy: penicillins and cephalosporins may cross-react. Review before prescribing.',
+    allergenCode: "MK-ALG-001",
+    relatedMedicationCodes: [
+      "MK-MED-020",
+      "MK-MED-021",
+      "MK-MED-022",
+      "MK-MED-023",
+    ],
+    note: "Recorded penicillin allergy: penicillins and cephalosporins may cross-react. Review before prescribing.",
   },
   {
-    allergenCode: 'MK-ALG-002',
-    relatedMedicationCodes: ['MK-MED-025'],
-    note: 'Recorded sulfonamide allergy: cotrimoxazole contains a sulfonamide. Review before prescribing.',
+    allergenCode: "MK-ALG-002",
+    relatedMedicationCodes: ["MK-MED-025"],
+    note: "Recorded sulfonamide allergy: cotrimoxazole contains a sulfonamide. Review before prescribing.",
   },
   {
-    allergenCode: 'MK-ALG-003',
-    relatedMedicationCodes: ['MK-MED-012', 'MK-MED-018', 'MK-MED-019'],
-    note: 'Recorded aspirin or NSAID allergy: aspirin and other NSAIDs are related. Review before prescribing.',
+    allergenCode: "MK-ALG-003",
+    relatedMedicationCodes: ["MK-MED-012", "MK-MED-018", "MK-MED-019"],
+    note: "Recorded aspirin or NSAID allergy: aspirin and other NSAIDs are related. Review before prescribing.",
   },
 ];

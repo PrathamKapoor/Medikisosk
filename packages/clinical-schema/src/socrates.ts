@@ -11,19 +11,19 @@
  * declares which dimensions are relevant, and whether each is required or optional. See ADR-008.
  */
 
-import { z } from 'zod';
-import { RESPONSE_STATES } from '@medikiosk/shared-types';
-import { normalisedAnswerSchema } from './answer';
+import { z } from "zod";
+import { RESPONSE_STATES } from "@medikiosk/shared-types";
+import { normalisedAnswerSchema } from "./answer";
 
 export const SOCRATES_DIMENSIONS = [
-  'SITE',
-  'ONSET',
-  'CHARACTER',
-  'RADIATION',
-  'ASSOCIATED',
-  'TIMING',
-  'EXACERBATING_RELIEVING',
-  'SEVERITY',
+  "SITE",
+  "ONSET",
+  "CHARACTER",
+  "RADIATION",
+  "ASSOCIATED",
+  "TIMING",
+  "EXACERBATING_RELIEVING",
+  "SEVERITY",
 ] as const;
 
 export type SocratesDimension = (typeof SOCRATES_DIMENSIONS)[number];
@@ -32,14 +32,17 @@ export const SOCRATES_DIMENSION_LABELS: Record<
   SocratesDimension,
   { letter: string; label: string }
 > = {
-  SITE: { letter: 'S', label: 'Site' },
-  ONSET: { letter: 'O', label: 'Onset' },
-  CHARACTER: { letter: 'C', label: 'Character' },
-  RADIATION: { letter: 'R', label: 'Radiation' },
-  ASSOCIATED: { letter: 'A', label: 'Associated symptoms' },
-  TIMING: { letter: 'T', label: 'Timing' },
-  EXACERBATING_RELIEVING: { letter: 'E', label: 'Aggravating and relieving factors' },
-  SEVERITY: { letter: 'S', label: 'Severity' },
+  SITE: { letter: "S", label: "Site" },
+  ONSET: { letter: "O", label: "Onset" },
+  CHARACTER: { letter: "C", label: "Character" },
+  RADIATION: { letter: "R", label: "Radiation" },
+  ASSOCIATED: { letter: "A", label: "Associated symptoms" },
+  TIMING: { letter: "T", label: "Timing" },
+  EXACERBATING_RELIEVING: {
+    letter: "E",
+    label: "Aggravating and relieving factors",
+  },
+  SEVERITY: { letter: "S", label: "Severity" },
 };
 
 /**
@@ -80,7 +83,7 @@ export type SocratesProfile = z.infer<typeof socratesProfileSchema>;
 /** The captured state of one SOCRATES dimension. */
 export const socratesSlotSchema = z.object({
   dimension: z.enum(SOCRATES_DIMENSIONS),
-  state: z.enum(RESPONSE_STATES).default('UNANSWERED'),
+  state: z.enum(RESPONSE_STATES).default("UNANSWERED"),
   answer: normalisedAnswerSchema.optional(),
   /** Evidence rows supporting this slot, so the claim can be traced back to its source. */
   evidenceIds: z.array(z.string().min(1).max(64)).default([]),
@@ -97,7 +100,7 @@ export function emptySocratesState(profile: SocratesProfile): SocratesSlotMap {
   for (const relevance of profile.dimensions) {
     slots[relevance.dimension] = {
       dimension: relevance.dimension,
-      state: 'UNANSWERED',
+      state: "UNANSWERED",
       evidenceIds: [],
       askCount: 0,
     };
@@ -128,11 +131,11 @@ export function socratesCompleteness(
   slots: SocratesSlotMap,
 ): SocratesCompleteness {
   const closedStates = new Set<string>([
-    'ANSWERED',
-    'VERIFIED',
-    'DECLINED',
-    'UNKNOWN',
-    'NOT_APPLICABLE',
+    "ANSWERED",
+    "VERIFIED",
+    "DECLINED",
+    "UNKNOWN",
+    "NOT_APPLICABLE",
   ]);
 
   let requiredTotal = 0;

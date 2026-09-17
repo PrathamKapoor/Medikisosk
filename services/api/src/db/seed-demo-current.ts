@@ -6,9 +6,9 @@
  * demo's contradiction, what-changed and red-flag walkthrough all read from these exact rows.
  */
 
-import { ulid } from 'ulid';
-import type { AppDatabase } from './kysely';
-import { DEMO_FIXTURES } from './seed-demo-patient';
+import { ulid } from "ulid";
+import type { AppDatabase } from "./kysely";
+import { DEMO_FIXTURES } from "./seed-demo-patient";
 
 export interface DemoCaseIds {
   readonly tenantId: string;
@@ -25,9 +25,9 @@ export async function seedDemoCurrentVisit(
 ): Promise<{ created: boolean }> {
   const now = new Date().toISOString();
   const marker = await db
-    .selectFrom('evidence')
+    .selectFrom("evidence")
     .selectAll()
-    .where('encounterId', '=', DEMO_FIXTURES.currentEncounterId)
+    .where("encounterId", "=", DEMO_FIXTURES.currentEncounterId)
     .executeTakeFirst();
   if (marker) return { created: false };
 
@@ -38,30 +38,51 @@ export async function seedDemoCurrentVisit(
     readonly confidence: number;
     readonly sourceRef: string;
   }[] = [
-    { code: 'MK-SYM-001', certainty: 'UNKNOWN', raw: 'seene mein dard kal se', confidence: 0.81, sourceRef: 'q.chest_pain.onset' },
-    { code: 'MK-SYM-002', certainty: 'UNKNOWN', raw: 'haan saans phool rahi hai', confidence: 0.71, sourceRef: 'q.chest_pain.safety_dyspnoea' },
+    {
+      code: "MK-SYM-001",
+      certainty: "UNKNOWN",
+      raw: "seene mein dard kal se",
+      confidence: 0.81,
+      sourceRef: "q.chest_pain.onset",
+    },
+    {
+      code: "MK-SYM-002",
+      certainty: "UNKNOWN",
+      raw: "haan saans phool rahi hai",
+      confidence: 0.71,
+      sourceRef: "q.chest_pain.safety_dyspnoea",
+    },
     // NEGATED: the negation is itself a clinical finding, preserved rather than discarded.
-    { code: 'MK-MED-001', certainty: 'NEGATED', raw: 'koi dawai nahi lete', confidence: 0.83, sourceRef: 'q.history.medications' },
+    {
+      code: "MK-MED-001",
+      certainty: "NEGATED",
+      raw: "koi dawai nahi lete",
+      confidence: 0.83,
+      sourceRef: "q.history.medications",
+    },
   ];
 
   for (const answer of answers) {
     await db
-      .insertInto('evidence')
+      .insertInto("evidence")
       .values({
         id: ulid(),
         tenantId,
         encounterId: DEMO_FIXTURES.currentEncounterId,
-        type: 'INTERVIEW_RESPONSE',
-        originClass: 'PATIENT_REPORTED',
-        source: 'questionnaire_response',
+        type: "INTERVIEW_RESPONSE",
+        originClass: "PATIENT_REPORTED",
+        source: "questionnaire_response",
         sourceRef: answer.sourceRef,
         rawValue: answer.raw,
-        normalisedJson: json({ conceptCodes: [answer.code], certainty: answer.certainty }),
+        normalisedJson: json({
+          conceptCodes: [answer.code],
+          certainty: answer.certainty,
+        }),
         confidence: answer.confidence,
-        language: 'hi-IN',
+        language: "hi-IN",
         capturedAt: now,
         createdBy: null,
-        verificationState: 'UNVERIFIED',
+        verificationState: "UNVERIFIED",
         verifiedAt: null,
         verifiedBy: null,
         supersededBy: null,
@@ -70,35 +91,35 @@ export async function seedDemoCurrentVisit(
   }
 
   await db
-    .insertInto('symptoms')
+    .insertInto("symptoms")
     .values({
       id: ulid(),
       tenantId,
       patientId: DEMO_FIXTURES.patientId,
       encounterId: DEMO_FIXTURES.currentEncounterId,
-      conceptCode: 'MK-SYM-001',
-      displayName: 'Chest pain',
-      patientText: 'seene mein dard kal se',
-      onsetDate: '2026-09-14',
+      conceptCode: "MK-SYM-001",
+      displayName: "Chest pain",
+      patientText: "seene mein dard kal se",
+      onsetDate: "2026-09-14",
       durationValue: 1,
-      durationUnit: 'DAYS',
-      durationVerbatim: 'kal se',
+      durationUnit: "DAYS",
+      durationVerbatim: "kal se",
       durationApproximate: 0,
-      severity: 'SEVERE',
-      severityVerbatim: 'bahut zyada',
-      certainty: 'UNKNOWN',
+      severity: "SEVERE",
+      severityVerbatim: "bahut zyada",
+      certainty: "UNKNOWN",
       socratesJson: json({
-        SITE: 'UNANSWERED',
-        ONSET: 'ANSWERED',
-        CHARACTER: 'UNANSWERED',
-        RADIATION: 'UNANSWERED',
-        ASSOCIATED: 'ANSWERED',
-        TIMING: 'UNANSWERED',
-        SEVERITY: 'ANSWERED',
+        SITE: "UNANSWERED",
+        ONSET: "ANSWERED",
+        CHARACTER: "UNANSWERED",
+        RADIATION: "UNANSWERED",
+        ASSOCIATED: "ANSWERED",
+        TIMING: "UNANSWERED",
+        SEVERITY: "ANSWERED",
       }),
-      originClass: 'PATIENT_REPORTED',
+      originClass: "PATIENT_REPORTED",
       confidence: 0.81,
-      verificationState: 'UNVERIFIED',
+      verificationState: "UNVERIFIED",
       verifiedAt: null,
       verifiedBy: null,
       createdAt: now,
@@ -107,27 +128,27 @@ export async function seedDemoCurrentVisit(
     .execute();
 
   await db
-    .insertInto('lab_results')
+    .insertInto("lab_results")
     .values({
       id: ulid(),
       tenantId,
       patientId: DEMO_FIXTURES.patientId,
       encounterId: DEMO_FIXTURES.currentEncounterId,
-      testCode: 'MK-LAB-001',
+      testCode: "MK-LAB-001",
       value: 9.2,
-      unit: 'g/dL',
+      unit: "g/dL",
       referenceLow: 12,
       referenceHigh: 16,
-      referenceSource: 'SOURCE_DOCUMENT',
-      flag: 'LOW',
+      referenceSource: "SOURCE_DOCUMENT",
+      flag: "LOW",
       implausible: 0,
       collectedAt: now,
       reportedAt: now,
       documentId: null,
       sourceComment: null,
-      originClass: 'DOCUMENT_DERIVED',
+      originClass: "DOCUMENT_DERIVED",
       confidence: 0.88,
-      verificationState: 'UNVERIFIED',
+      verificationState: "UNVERIFIED",
       verifiedAt: null,
       verifiedBy: null,
       createdAt: now,
@@ -135,23 +156,23 @@ export async function seedDemoCurrentVisit(
     .execute();
 
   await db
-    .insertInto('vitals')
+    .insertInto("vitals")
     .values({
       id: ulid(),
       tenantId,
       patientId: DEMO_FIXTURES.patientId,
       encounterId: DEMO_FIXTURES.currentEncounterId,
-      conceptCode: 'MK-VIT-004',
+      conceptCode: "MK-VIT-004",
       componentCode: null,
       value: 93,
-      unit: '%',
+      unit: "%",
       measuredAt: now,
-      source: 'MANUAL_ENTRY',
+      source: "MANUAL_ENTRY",
       deviceId: null,
       implausible: 0,
-      originClass: 'PATIENT_REPORTED',
+      originClass: "PATIENT_REPORTED",
       confidence: 0.95,
-      verificationState: 'UNVERIFIED',
+      verificationState: "UNVERIFIED",
       verifiedAt: null,
       verifiedBy: null,
       createdAt: now,
@@ -159,17 +180,23 @@ export async function seedDemoCurrentVisit(
     .execute();
 
   await db
-    .insertInto('contradictions')
+    .insertInto("contradictions")
     .values({
       id: ulid(),
       tenantId,
       encounterId: DEMO_FIXTURES.currentEncounterId,
-      kind: 'MEDICATION_DISCREPANCY',
-      severity: 'HIGH',
-      statementAJson: json({ text: 'Patient reports no current medications', originClass: 'PATIENT_REPORTED' }),
-      statementBJson: json({ text: 'Metformin 500 mg BD on record since 2026-03-04', originClass: 'CLINICIAN_ENTERED' }),
-      suggestion: 'Confirm whether metformin is still being taken.',
-      resolutionState: 'OPEN',
+      kind: "MEDICATION_DISCREPANCY",
+      severity: "HIGH",
+      statementAJson: json({
+        text: "Patient reports no current medications",
+        originClass: "PATIENT_REPORTED",
+      }),
+      statementBJson: json({
+        text: "Metformin 500 mg BD on record since 2026-03-04",
+        originClass: "CLINICIAN_ENTERED",
+      }),
+      suggestion: "Confirm whether metformin is still being taken.",
+      resolutionState: "OPEN",
       resolution: null,
       resolutionNote: null,
       resolvedBy: null,

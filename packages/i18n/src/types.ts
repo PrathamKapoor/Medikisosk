@@ -9,14 +9,14 @@
  */
 
 export const LOCALE_CODES = [
-  'en-IN',
-  'hi-IN',
-  'mr-IN',
-  'gu-IN',
-  'ta-IN',
-  'te-IN',
-  'bn-IN',
-  'kn-IN',
+  "en-IN",
+  "hi-IN",
+  "mr-IN",
+  "gu-IN",
+  "ta-IN",
+  "te-IN",
+  "bn-IN",
+  "kn-IN",
 ] as const;
 
 export type LocaleCode = (typeof LOCALE_CODES)[number];
@@ -25,16 +25,16 @@ export type LocaleCode = (typeof LOCALE_CODES)[number];
  * English (India) is the reference locale: it is the language the clinical
  * content was authored in, and it is the fallback for every other locale.
  */
-export const DEFAULT_LOCALE: LocaleCode = 'en-IN';
+export const DEFAULT_LOCALE: LocaleCode = "en-IN";
 
 export type Script =
-  | 'LATIN'
-  | 'DEVANAGARI'
-  | 'GUJARATI'
-  | 'TAMIL'
-  | 'TELUGU'
-  | 'BENGALI'
-  | 'KANNADA';
+  | "LATIN"
+  | "DEVANAGARI"
+  | "GUJARATI"
+  | "TAMIL"
+  | "TELUGU"
+  | "BENGALI"
+  | "KANNADA";
 
 export interface LocaleMeta {
   code: LocaleCode;
@@ -50,60 +50,60 @@ export interface LocaleMeta {
 }
 
 export const LOCALE_META: Record<LocaleCode, LocaleMeta> = {
-  'en-IN': {
-    code: 'en-IN',
-    englishName: 'English (India)',
-    nativeName: 'English',
-    script: 'LATIN',
+  "en-IN": {
+    code: "en-IN",
+    englishName: "English (India)",
+    nativeName: "English",
+    script: "LATIN",
     rtl: false,
   },
-  'hi-IN': {
-    code: 'hi-IN',
-    englishName: 'Hindi',
-    nativeName: 'हिन्दी',
-    script: 'DEVANAGARI',
+  "hi-IN": {
+    code: "hi-IN",
+    englishName: "Hindi",
+    nativeName: "हिन्दी",
+    script: "DEVANAGARI",
     rtl: false,
   },
-  'mr-IN': {
-    code: 'mr-IN',
-    englishName: 'Marathi',
-    nativeName: 'मराठी',
-    script: 'DEVANAGARI',
+  "mr-IN": {
+    code: "mr-IN",
+    englishName: "Marathi",
+    nativeName: "मराठी",
+    script: "DEVANAGARI",
     rtl: false,
   },
-  'gu-IN': {
-    code: 'gu-IN',
-    englishName: 'Gujarati',
-    nativeName: 'ગુરાતી',
-    script: 'GUJARATI',
+  "gu-IN": {
+    code: "gu-IN",
+    englishName: "Gujarati",
+    nativeName: "ગુરાતી",
+    script: "GUJARATI",
     rtl: false,
   },
-  'ta-IN': {
-    code: 'ta-IN',
-    englishName: 'Tamil',
-    nativeName: 'தமிழ்',
-    script: 'TAMIL',
+  "ta-IN": {
+    code: "ta-IN",
+    englishName: "Tamil",
+    nativeName: "தமிழ்",
+    script: "TAMIL",
     rtl: false,
   },
-  'te-IN': {
-    code: 'te-IN',
-    englishName: 'Telugu',
-    nativeName: 'తెలుగు',
-    script: 'TELUGU',
+  "te-IN": {
+    code: "te-IN",
+    englishName: "Telugu",
+    nativeName: "తెలుగు",
+    script: "TELUGU",
     rtl: false,
   },
-  'bn-IN': {
-    code: 'bn-IN',
-    englishName: 'Bengali',
-    nativeName: 'বাংলা',
-    script: 'BENGALI',
+  "bn-IN": {
+    code: "bn-IN",
+    englishName: "Bengali",
+    nativeName: "বাংলা",
+    script: "BENGALI",
     rtl: false,
   },
-  'kn-IN': {
-    code: 'kn-IN',
-    englishName: 'Kannada',
-    nativeName: 'ಕನ್ನಡ',
-    script: 'KANNADA',
+  "kn-IN": {
+    code: "kn-IN",
+    englishName: "Kannada",
+    nativeName: "ಕನ್ನಡ",
+    script: "KANNADA",
     rtl: false,
   },
 };
@@ -132,7 +132,7 @@ export const PROVISIONAL_LOCALES: readonly LocaleCode[] = LOCALE_CODES.filter(
 );
 
 /** Version of the catalogue content, bumped whenever any value changes. */
-export const CATALOGUE_VERSION = '1.0.0';
+export const CATALOGUE_VERSION = "1.1.0";
 
 /**
  * Hard flag consumed by the UI/boot code: while true, non-English catalogues

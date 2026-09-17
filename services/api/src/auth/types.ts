@@ -5,8 +5,8 @@
  * importing the implementation.
  */
 
-import type { Permission, Role } from '@medikiosk/auth';
-import type { TenantBranding } from './repository/tenant.repo';
+import type { Permission, Role } from "@medikiosk/auth";
+import type { TenantBranding } from "./repository/tenant.repo";
 
 export interface LoginRequest {
   readonly tenantSlug: string;

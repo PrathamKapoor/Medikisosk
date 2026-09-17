@@ -13,19 +13,19 @@
  * by a model.
  */
 export const ORIGIN_CLASSES = [
-  'PATIENT_REPORTED',
-  'DOCUMENT_DERIVED',
-  'CLINICIAN_ENTERED',
-  'AI_INFERRED',
+  "PATIENT_REPORTED",
+  "DOCUMENT_DERIVED",
+  "CLINICIAN_ENTERED",
+  "AI_INFERRED",
 ] as const;
 
 export type OriginClass = (typeof ORIGIN_CLASSES)[number];
 
 export const ORIGIN_CLASS_LABELS: Record<OriginClass, string> = {
-  PATIENT_REPORTED: 'Patient reported',
-  DOCUMENT_DERIVED: 'From document',
-  CLINICIAN_ENTERED: 'Clinician entered',
-  AI_INFERRED: 'AI suggested',
+  PATIENT_REPORTED: "Patient reported",
+  DOCUMENT_DERIVED: "From document",
+  CLINICIAN_ENTERED: "Clinician entered",
+  AI_INFERRED: "AI suggested",
 };
 
 /**
@@ -34,8 +34,8 @@ export const ORIGIN_CLASS_LABELS: Record<OriginClass, string> = {
  * is `DOCUMENT_DERIVED` when its extraction confidence is low.
  */
 export const TRUSTED_ORIGINS: readonly OriginClass[] = [
-  'PATIENT_REPORTED',
-  'CLINICIAN_ENTERED',
+  "PATIENT_REPORTED",
+  "CLINICIAN_ENTERED",
 ];
 
 /** Provenance of an extracted or generated value, carried alongside the value itself. */
@@ -52,19 +52,19 @@ export interface Provenance {
 // ---------------------------------------------------------------------------
 
 export const VERIFICATION_STATES = [
-  'UNVERIFIED',
-  'VERIFIED',
-  'REJECTED',
-  'CORRECTED',
+  "UNVERIFIED",
+  "VERIFIED",
+  "REJECTED",
+  "CORRECTED",
 ] as const;
 
 export type VerificationState = (typeof VERIFICATION_STATES)[number];
 
 export const VERIFICATION_STATE_LABELS: Record<VerificationState, string> = {
-  UNVERIFIED: 'Not yet reviewed',
-  VERIFIED: 'Verified',
-  REJECTED: 'Rejected',
-  CORRECTED: 'Corrected by clinician',
+  UNVERIFIED: "Not yet reviewed",
+  VERIFIED: "Verified",
+  REJECTED: "Rejected",
+  CORRECTED: "Corrected by clinician",
 };
 
 // ---------------------------------------------------------------------------
@@ -80,11 +80,13 @@ export const VERIFICATION_STATE_LABELS: Record<VerificationState, string> = {
  */
 declare const confidenceBrand: unique symbol;
 
-export type Confidence = number & { readonly [confidenceBrand]: 'Confidence' };
+export type Confidence = number & { readonly [confidenceBrand]: "Confidence" };
 
 export function confidence(value: number): Confidence {
   if (!Number.isFinite(value)) {
-    throw new RangeError(`confidence must be a finite number, received ${String(value)}`);
+    throw new RangeError(
+      `confidence must be a finite number, received ${String(value)}`,
+    );
   }
   return Math.min(1, Math.max(0, value)) as Confidence;
 }
@@ -94,12 +96,12 @@ export const CONFIDENCE_RELIABLE = 0.7;
 /** Below this value the patient must be asked to confirm, or touch fallback offered. */
 export const CONFIDENCE_REVIEW_REQUIRED = 0.5;
 
-export type ConfidenceBand = 'high' | 'moderate' | 'low';
+export type ConfidenceBand = "high" | "moderate" | "low";
 
 export function describeConfidence(c: Confidence): ConfidenceBand {
-  if (c >= CONFIDENCE_RELIABLE) return 'high';
-  if (c >= CONFIDENCE_REVIEW_REQUIRED) return 'moderate';
-  return 'low';
+  if (c >= CONFIDENCE_RELIABLE) return "high";
+  if (c >= CONFIDENCE_REVIEW_REQUIRED) return "moderate";
+  return "low";
 }
 
 /** Requires mandatory clinician verification before the value may influence the record. */
@@ -112,19 +114,25 @@ export function requiresClinicianReview(c: Confidence): boolean {
  * extraction, certainty describes the patient's own epistemic state ("I think", "definitely",
  * "it is not"). Conflating the two discards information a clinician needs.
  */
-export const CERTAINTIES = ['SUSPECTED', 'PROBABLE', 'CONFIRMED', 'NEGATED', 'UNKNOWN'] as const;
+export const CERTAINTIES = [
+  "SUSPECTED",
+  "PROBABLE",
+  "CONFIRMED",
+  "NEGATED",
+  "UNKNOWN",
+] as const;
 
 export type Certainty = (typeof CERTAINTIES)[number];
 
 export const CERTAINTY_LABELS: Record<Certainty, string> = {
-  SUSPECTED: 'Suspected',
-  PROBABLE: 'Probable',
-  CONFIRMED: 'Confirmed',
-  NEGATED: 'Denied',
-  UNKNOWN: 'Unknown',
+  SUSPECTED: "Suspected",
+  PROBABLE: "Probable",
+  CONFIRMED: "Confirmed",
+  NEGATED: "Denied",
+  UNKNOWN: "Unknown",
 };
 
 /** Evidence may be attached to support a negation; a negation is itself a clinical fact. */
 export function isNegation(certainty: Certainty): boolean {
-  return certainty === 'NEGATED';
+  return certainty === "NEGATED";
 }

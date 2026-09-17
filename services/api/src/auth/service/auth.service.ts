@@ -12,7 +12,13 @@
  *    signal that matters operationally, so it is recorded with the username and never the password.
  */
 
-import { errors, err, ok, type MediKioskError, type Result } from '@medikiosk/shared-types';
+import {
+  errors,
+  err,
+  ok,
+  type MediKioskError,
+  type Result,
+} from "@medikiosk/shared-types";
 import {
   hasPermission,
   hashPassword,
@@ -21,19 +27,23 @@ import {
   verifyPassword,
   STAFF_TOKEN_TTL_MINUTES,
   type Permission,
-} from '@medikiosk/auth';
-import type { AppConfig } from '../../config/env';
-import type { AppDatabase } from '../../db/kysely';
-import type { AppLogger } from '../../platform/logger';
-import { appendAuditEvent } from '../../platform/audit';
-import { findTenantBySlug, parseBranding } from '../repository/tenant.repo';
-import { findUserByUsername, parseRoles } from '../repository/user.repo';
+} from "@medikiosk/auth";
+import type { AppConfig } from "../../config/env";
+import type { AppDatabase } from "../../db/kysely";
+import type { AppLogger } from "../../platform/logger";
+import { appendAuditEvent } from "../../platform/audit";
+import { findTenantBySlug, parseBranding } from "../repository/tenant.repo";
+import {
+  findUserByUsername,
+  parseRoles,
+  touchLastLogin,
+} from "../repository/user.repo";
 import type {
   AuthenticatedPrincipal,
   LoginOutcome,
   LoginRequest,
   RequestAuditContext,
-} from '../types';
+} from "../types";
 
 export interface AuthServiceDeps {
   readonly db: AppDatabase;
@@ -60,14 +70,19 @@ export class AuthService {
 
     const tenant = await findTenantBySlug(db, request.tenantSlug);
     if (!tenant) {
-      await appendAuditEvent(db, logger, { requestId: context.requestId }, {
-        tenantId: 'unknown',
-        actorKind: 'SYSTEM',
-        action: 'USER_LOGIN_FAILED',
-        result: 'DENIED',
-        detail: { reason: 'UNKNOWN_TENANT' },
-      });
-      return err(errors.forbidden('Unknown or inactive hospital identifier.'));
+      await appendAuditEvent(
+        db,
+        logger,
+        { requestId: context.requestId },
+        {
+          tenantId: "unknown",
+          actorKind: "SYSTEM",
+          action: "USER_LOGIN_FAILED",
+          result: "DENIED",
+          detail: { reason: "UNKNOWN_TENANT" },
+        },
+      );
+      return err(errors.forbidden("Unknown or inactive hospital identifier."));
     }
 
     const auditContext = { requestId: context.requestId, tenantId: tenant.id };
@@ -75,15 +90,19 @@ export class AuthService {
 
     if (!user) {
       // Burn comparable time, then reject with the same shape as a wrong password.
-      await verifyPassword(request.password, config.MEDIKIOSK_HASH_PEPPER, await this.dummyHash());
+      await verifyPassword(
+        request.password,
+        config.MEDIKIOSK_HASH_PEPPER,
+        await this.dummyHash(),
+      );
       await appendAuditEvent(db, logger, auditContext, {
         tenantId: tenant.id,
-        actorKind: 'SYSTEM',
-        action: 'USER_LOGIN_FAILED',
-        result: 'FAILURE',
-        detail: { reason: 'UNKNOWN_USER', username: request.username },
+        actorKind: "SYSTEM",
+        action: "USER_LOGIN_FAILED",
+        result: "FAILURE",
+        detail: { reason: "UNKNOWN_USER", username: request.username },
       });
-      return err(errors.unauthenticated('Invalid username or password.'));
+      return err(errors.unauthenticated("Invalid username or password."));
     }
 
     const passwordOk = await verifyPassword(
@@ -95,35 +114,43 @@ export class AuthService {
       await appendAuditEvent(db, logger, auditContext, {
         tenantId: tenant.id,
         actorId: user.id,
-        actorKind: 'STAFF',
-        action: 'USER_LOGIN_FAILED',
-        resourceType: 'user',
+        actorKind: "STAFF",
+        action: "USER_LOGIN_FAILED",
+        resourceType: "user",
         resourceId: user.id,
-        result: 'FAILURE',
-        detail: { reason: 'WRONG_PASSWORD', username: request.username },
+        result: "FAILURE",
+        detail: { reason: "WRONG_PASSWORD", username: request.username },
       });
       // Byte-identical message to the unknown-user path. See the class comment.
-      return err(errors.unauthenticated('Invalid username or password.'));
+      return err(errors.unauthenticated("Invalid username or password."));
     }
 
     if (user.active !== 1) {
       await appendAuditEvent(db, logger, auditContext, {
         tenantId: tenant.id,
         actorId: user.id,
-        actorKind: 'STAFF',
-        action: 'USER_LOGIN_FAILED',
-        resourceType: 'user',
+        actorKind: "STAFF",
+        action: "USER_LOGIN_FAILED",
+        resourceType: "user",
         resourceId: user.id,
-        result: 'DENIED',
-        detail: { reason: 'ACCOUNT_INACTIVE' },
+        result: "DENIED",
+        detail: { reason: "ACCOUNT_INACTIVE" },
       });
-      return err(errors.forbidden('This account is not active. Contact your administrator.'));
+      return err(
+        errors.forbidden(
+          "This account is not active. Contact your administrator.",
+        ),
+      );
     }
 
     const roles = parseRoles(user.rolesJson);
     if (roles.length === 0) {
       // A user with no parseable role can do nothing; issuing a token would imply otherwise.
-      return err(errors.forbidden('This account has no assigned role. Contact your administrator.'));
+      return err(
+        errors.forbidden(
+          "This account has no assigned role. Contact your administrator.",
+        ),
+      );
     }
 
     const issuedAt = now();
@@ -136,7 +163,7 @@ export class AuthService {
         roles,
       },
       config.MEDIKIOSK_JWT_SECRET,
-      { ttlMinutes: STAFF_TOKEN_TTL_MINUTES },
+      { ttlMinutes: STAFF_TOKEN_TTL_MINUTES, now: issuedAt },
     );
     const expiresAt = new Date(
       issuedAt.getTime() + STAFF_TOKEN_TTL_MINUTES * 60_000,
@@ -145,13 +172,23 @@ export class AuthService {
     await appendAuditEvent(db, logger, auditContext, {
       tenantId: tenant.id,
       actorId: user.id,
-      actorKind: 'STAFF',
-      action: 'USER_LOGIN_SUCCEEDED',
-      resourceType: 'user',
+      actorKind: "STAFF",
+      action: "USER_LOGIN_SUCCEEDED",
+      resourceType: "user",
       resourceId: user.id,
-      result: 'SUCCESS',
-      detail: { roles: roles.join(',') },
+      result: "SUCCESS",
+      detail: { roles: roles.join(",") },
     });
+
+    // Best-effort: a failure to timestamp the login must not fail the login itself.
+    // See user.repo.ts — the function contract requires callers to absorb its errors.
+    try {
+      await touchLastLogin(db, user.id, issuedAt.toISOString());
+    } catch {
+      logger.error(auditContext, "Failed to record last login timestamp", {
+        reason: "LAST_LOGIN_WRITE_FAILED",
+      });
+    }
 
     return ok({
       token,
@@ -179,7 +216,10 @@ export class AuthService {
    * the kiosk resilient to an API restart mid-shift. This method therefore exists for the audit
    * trail: an operator investigating an incident needs to see when a session was deliberately ended.
    */
-  async logout(principal: AuthenticatedPrincipal, context: RequestAuditContext): Promise<void> {
+  async logout(
+    principal: AuthenticatedPrincipal,
+    context: RequestAuditContext,
+  ): Promise<void> {
     await appendAuditEvent(
       this.deps.db,
       this.deps.logger,
@@ -187,11 +227,11 @@ export class AuthService {
       {
         tenantId: principal.tenantId,
         actorId: principal.userId,
-        actorKind: 'STAFF',
-        action: 'USER_LOGOUT',
-        resourceType: 'user',
+        actorKind: "STAFF",
+        action: "USER_LOGOUT",
+        resourceType: "user",
         resourceId: principal.userId,
-        result: 'SUCCESS',
+        result: "SUCCESS",
       },
     );
   }
@@ -224,9 +264,10 @@ export class AuthService {
   private async dummyHash(): Promise<string> {
     if (!this.dummyHashCache) {
       const random = `timing-equalisation-${Math.random().toString(36).slice(2)}-padding-value`;
-      this.dummyHashCache = hashPassword(random, this.deps.config.MEDIKIOSK_HASH_PEPPER).then(
-        (result) => result.hash,
-      );
+      this.dummyHashCache = hashPassword(
+        random,
+        this.deps.config.MEDIKIOSK_HASH_PEPPER,
+      ).then((result) => result.hash);
     }
     return this.dummyHashCache;
   }

@@ -7,6 +7,12 @@ Every endpoint below is specified with purpose, authentication, authorisation, r
 errors, side effects and audit behaviour. This document is the single source of truth for the API, the
 kiosk and the console. If a client and the server disagree, this document wins.
 
+**Implementation boundary (2026-09-17):** This contract contains future-phase
+endpoints as well as implemented routes. It is a design specification, not proof
+that every endpoint is available. See the current phase report and `handoff.md`
+for exercised routes. No clinical interview, document, physician, FHIR or ABDM
+workflow is established by the registration/consent subphase.
+
 ---
 
 ## 0. Conventions
@@ -28,9 +34,12 @@ existence of another tenant's record is not disclosed. See ADR-011.
 from roles, not asserted by the client. `SUPER_ADMIN` may manage configuration and read aggregate
 metrics but may **not** read clinical content.
 
-**Idempotency.** Every mutating endpoint accepts `Idempotency-Key: <ulid>`. Reusing a key with a
-different body returns `409 IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD`; reusing it with the same
-body returns the original response. This is what makes offline replay safe (ADR-004).
+**Idempotency.** Mutating kiosk lifecycle endpoints accept `Idempotency-Key` as a
+ULID or UUID. Same authenticated scope, operation, key and canonical payload
+replay the original response; changed payload returns
+`409 IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD`. Future clinical endpoints
+must adopt this convention before offline replay is enabled. Staff login/logout
+are not replay-cached.
 
 **Error envelope.** Every error response has exactly this shape and never contains a stack trace, SQL
 text, an internal path, a provider payload, or PHI.
@@ -105,6 +114,7 @@ Request `{ "locale": "hi-IN" }`. Response `201`:
 ```json
 {
   "sessionId": "01J9Z8",
+  "token": "<kiosk-session-bearer-token>",
   "expiresAt": "2026-09-15T11:15:00.000Z",
   "ttlMinutes": 45,
   "kiosk": { "id": "k-1", "name": "OPD Block A Kiosk 2" },
@@ -129,6 +139,12 @@ is made explicit in the response. Audit: `SESSION_WIPED`.
 Auth: session token. Returns session state, remaining TTL and the current interview step, so a kiosk
 that reloads mid-interview resumes rather than restarts. Audit: none (high frequency, read only).
 
+### `PATCH /api/v1/kiosk/sessions/:sessionId`
+Auth: session token. Request `{ "locale": "mr-IN" }`. Changes presentation language
+without replacing patient identity or consent history. The locale must be supported
+by the tenant and have published consent wording; switching language is not a new
+consent grant. Current consent retains the language originally presented.
+
 ---
 
 ## 4. Identity
@@ -137,7 +153,7 @@ that reloads mid-interview resumes rather than restarts. Audit: none (high frequ
 Request `{ "sessionId": "s-1", "method": "ABHA_OTP" | "ABHA_QR" | "GUEST" | "RETURNING" }`.
 Response for an ABHA flow:
 `201 { "challengeId": "c-1", "otpLength": 6, "expiresAt": "2026-09-15T10:35:00.000Z", "providerName": "mock" }`.
-Response for a guest flow: `201 { "guestRef": "g-1" }`.
+Response for a guest flow: `201 { "guestRef": "g-1", "patientId": "p-1", "providerName": "mock", "verified": false }`.
 Errors: `503 IDENTITY_PROVIDER_UNAVAILABLE`, `403 FORBIDDEN`.
 Audit: `IDENTITY_FLOW_STARTED`. `providerName` is returned so the kiosk can display an honest notice
 when identity is a mock rather than ABHA.
@@ -148,6 +164,12 @@ Response `200 { "patientId": "p-1", "verified": true, "displayNameMasked": "R a 
 Errors: `410 IDENTITY_OTP_EXPIRED`, `400 IDENTITY_OTP_INVALID`, `429 IDENTITY_OTP_ATTEMPTS_EXCEEDED`.
 Side effects: creates or matches a patient; links an external identifier.
 Audit: `IDENTITY_VERIFIED` / `IDENTITY_VERIFICATION_FAILED`. Only the masked identifier is ever logged.
+
+**Synthetic identity boundary:** The local mock challenge accepts the displayed
+synthetic demonstration OTP `123456`. `ABHA_OTP`, `ABHA_QR` and `RETURNING` mock
+paths do not verify real ABHA, scan a real QR or retrieve an existing person's
+medical record. Responses identify `providerName: "mock"`; `verified: true` means
+only that the synthetic challenge was completed. Do not enter real identifiers.
 
 ---
 

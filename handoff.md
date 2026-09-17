@@ -1,440 +1,322 @@
 # MediKiosk — Project Handoff
 
-Written 2026-09-17 after the API-foundation subphase. Inspect the repository before acting on any
-statement below; this document was written from the actual files on disk, not from memory.
+Written 2026-09-17 after the kiosk registration + consent subphase. Inspect the repository before
+acting on any statement below; this document was written from the actual files on disk and from
+fresh verification runs, not from memory. There is no handoff-generation script in the repository;
+the procedure is to rewrite this file to match the measured repository state after each subphase.
 
 ---
 
 ## 1. Current Phase
 
-- **Phase:** 1 of 21 (Foundation) — per the phase plan in `docs/BASELINE.md`.
-- **Subphase:** Phase 1 completion — API foundation: config, dual-dialect DB layer, migrations, seed,
-  auth service, auth routes, Fastify app, PHI-safe logging, audit writer.
-- **Objective:** Get `services/api` from zero to a booting Fastify server with working staff login on
-  SQLite, plus all domain packages compiling.
-- **Status:** **Subphase complete for what it set out to do.** The API compiles, boots, and serves a
-  verified login flow. Phases 2+ (kiosk, consent engine, interview engine, documents, physician
-  console, FHIR, offline, evaluation) are **not started** — only their planning documents exist.
+- **Phase:** 2 of 21, subphase "kiosk registration + consent lifecycle" — per `docs/BASELINE.md`
+  roadmap (Phases 0–1 foundation complete; hard-won corrections below).
+- **Status:** **Complete.** The API boots with device-authenticated kiosk sessions, synthetic
+  identity, granular consent with a service-layer guard, idempotent mutations, TTL/locale
+  handling and wipe. The patient kiosk (React 18 + Vite 6) drives the real endpoints end-to-end.
+  All quality gates pass (build, typecheck, ESLint, 27 tests, Prettier check).
+- **Remaining phases (not started):** interview runtime, voice/ASR/TTS, document/OCR, vitals,
+  physician console, AYUSH runtime, FHIR, ABDM, offline/sync, analytics, evaluation harness,
+  deployment artefacts, security hardening, E2E clinical validation, SIH polish, startup
+  readiness.
 
-**Overall project objective:** MediKiosk — an AI-assisted, multimodal, multilingual clinical intake
-platform for Indian OPDs, with deterministic safety rules, evidence-grounded AI, and FHIR/ABDM
-interoperability. The master requirements are the ADRs (`docs/adr/ADR-001..011`) and the API contract
-(`docs/api/CONTRACT.md`). `docs/BASELINE.md` records the audit and phase plan.
+**Overall project objective:** MediKiosk — an AI-assisted, multimodal, multilingual clinical
+intake platform for Indian OPDs, with deterministic safety rules, evidence-grounded AI, and
+FHIR/ABDM interoperability. The master prompt's later phases are separate work; the contract and
+the ADRs remain the design authority.
 
-**Repository note:** git is initialised on branch `main` with **zero commits**. Everything is
-untracked. An early commit should be made before further work.
+**Repository note:** git is on `main` with one commit (`4e497c8` "Phase 1: foundation…"). All of
+this subphase's work is **uncommitted** — the first commit of this work should be made soon.
 
 ---
 
 ## 2. Work Completed
 
-### 2.1 Domain packages (all compile, all CommonJS output via `tsc`)
+### 2.1 Foundation closure (from the interrupted session, now verified)
 
-**`packages/shared-types`** — Primitives used everywhere:
-- `ids.ts`: branded IDs (`TenantId`, `UserId`, `PatientId`, `EncounterId`), `IsoDateTime`,
-  `IsoDate`, `Paged<T>`.
-- `provenance.ts`: `ORIGIN_CLASSES` (`PATIENT_REPORTED | DOCUMENT_DERIVED | CLINICIAN_ENTERED |
-  AI_INFERRED`), `VERIFICATION_STATES`, `Confidence` (branded locally so the module has no imports),
-  `confidence()`, `CONFIDENCE_RELIABLE = 0.7`, `CONFIDENCE_REVIEW_REQUIRED = 0.5`, `CERTAINTIES`
-  incl. `NEGATED`.
-- `response-state.ts`: `RESPONSE_STATES` incl. `DECLINED`, `UNKNOWN`, `LOW_CONFIDENCE`,
-  `CONTRADICTORY`; helpers `isAnswered`, `isOpen`, `isTerminal`, `NOT_A_NEGATIVE_STATES`.
-- `triage.ts`: `TRIAGE_LEVELS`, `levelToPriority`, `maxTriageLevel`, `QUEUE_STATUSES`,
-  `compareQueueOrder`.
-- `errors.ts`: `ERROR_CODES` catalogue (50 codes), `ERROR_STATUS` map, `MediKioskError` with
-  `.code/.status/.details`, and `errors.notFound/validation/consentMissing/forbidden/unauthenticated/
-  conflict/aiDisabled/featureDisabled/dependency`.
-- `result.ts`: `Result<T, MediKioskError>`, `ok`, `err`, `isOk`, `unwrap`, `mapResult`.
-- `clock.ts`: `Clock`, `systemClock`, `fixedClock`, `steppingClock`, date helpers.
+- **Root tooling:** `package.json` `build` runs `build:foundation` (six implemented workspaces in
+  dependency order: shared-types → clinical-schema → auth → i18n → safety-rules → api) then the
+  kiosk workspace. Manifest-only packages (`evidence-model`, `fhir-models`, `ui`, `console`) are
+  **not** built — they have no `tsconfig.json` and no source. No empty shared tsconfig was added;
+  missing implementations stay visible.
+- **Quality gates:** root `typecheck` (build:foundation + kiosk `tsc --noEmit` + `tsconfig.test.json`),
+  real ESLint 9 flat config `eslint.config.mjs` (@eslint/js + typescript-eslint; unicode-safety
+  rules enforced), Prettier `format`/`format:check` scoped to implemented code, `vitest` root suite
+  with `pretest` that builds foundations first. `tsconfig.test.json` type-checks tests; production
+  builds exclude `**/*.test.ts`.
+- **Tests:** `vitest.config.ts` (root), `services/api/src/testing/test-app.ts` (`buildTestApp` —
+  in-memory SQLite, FK ON, migrations, base + demo seed, frozen clock `TEST_NOW`, injected
+  logger/now), `services/api/src/db/migrate.test.ts` (idempotence + ledger preservation),
+  `services/api/src/auth/routes/auth.routes.test.ts` (6 tests: login/me/logout, timing-equalised
+  unknown-user vs wrong-password, disabled accounts, last-login failure absorbed without leaking
+  DB payload, token expiry at advertised instant via injected clock, per-IP login throttle).
+- **Auth fixes:** `touchLastLogin` wired into successful login (best-effort, absorbed errors);
+  `AuthService`/`authenticateStaff`/routes/`signStaffToken` take an injectable `now`;
+  **`classifyRejection` fixed** in `packages/auth/src/tokens.ts` — audience check now runs first,
+  because jose's audience-failure text contains "unexp**exp**ected", whose "exp" substring was
+  misread as token expiry (broke the staff-wipe fallback). Regression test in
+  `packages/auth/src/__tests__/tokens.test.ts` (2 tests).
+- **Formatting:** Prettier normalized the pre-existing domain sources (large but cosmetic diff).
 
-**`packages/clinical-schema`** — Canonical clinical model:
-- `primitives.ts` (severity scale + ordinal, duration units, anatomical sites, Zod primitives),
-  `answer.ts` (`normalisedAnswerSchema` with immutable `rawAnswer`, `quantitySchema` with
-  `referenceSource`).
-- `socrates.ts`: per-complaint SOCRATES profile, slots, `socratesCompleteness`.
-- `trigger.ts` / `trigger-eval.ts` / `trigger-describe.ts`: the declarative trigger language used by
-  **both** pathways and safety rules; `TriggerContext` is the shared evaluation context.
-- `pathway.ts` / `pathway-model.ts`: question kinds, categories with priority rank
-  (SAFETY_CRITICAL=1 … COMPLETENESS=6), `PathwayQuestionInput` (`z.input` so defaults are optional
-  when authoring), `InterviewPathway`, `validatePathway`.
-- `concept*.ts`: vocabulary with local `MK-*` codes and multilingual synonyms, plus a two-pass
-  matcher (exact longest match, then gapped co-occurrence). The gapped pass exists because
-  "mere chest mein kal se pain hai" did not match "chest pain" without it; it requires all content
-  words of a multi-word synonym and only skips stopwords.
-- `ontology/`: symptoms, conditions (ICD-10 where known), 40 medications, 18 allergens +
-  `CROSS_REACTIVITY_NOTES`, history facts, AYUSH, vital definitions, 11 lab definitions (LOINC,
-  default ranges).
-- `lab-analysis.ts`: `flagLabResult` with reference-range precedence (source document > tenant
-  config > MediKiosk default > UNKNOWN); never defaults to NORMAL.
-- `therapy-models.ts`: `reconcileMedications`, `summariseAllergies` (`safeToAssumeNoAllergy` true
-  **only** for `CONFIRMED_NO_KNOWN_ALLERGIES`).
-- `pathways/`: 9 pathways, `PATHWAY_VERSION = '1.0.0'`, 70 question keys, `validateAllPathways()`.
+### 2.2 Kiosk session lifecycle (new)
 
-**`packages/safety-rules`** — Deterministic triage engine, **43 rules** (20 RED / 22 AMBER / 1
-advisory). Rules are data using clinical-schema's `TriggerExpression`. `assess.ts:evaluateTriage` is
-pure; non-advisory max severity sets the level; advisory hits set `requiresHumanReview`; rules
-missing `evidenceRequired` facts are **not fired** and reported as evidence-gated; age-bounded rules
-with unknown age are listed as skipped. `coverage.ts` reports unwatched facts.
-`RULE_SET_VERSION = '1.0.0'`.
+Files: `services/api/src/kiosk/{session.repo.ts, replay.ts, kiosk.service.ts, kiosk.routes.ts,
+lifecycle.test.ts}`, migration `services/api/src/db/migrations/0014-session-lifecycle.ts`
+(idempotency_keys gains `sessionId`), `services/api/src/db/migrations/index.ts`,
+`services/api/src/db/tables-system.ts`.
 
-**`packages/auth`** — `permissions.ts` (6 roles, 40 permissions, explicit `ROLE_PERMISSIONS` table),
-`tokens.ts` (jose HS256; audiences `medikiosk.staff` / `medikiosk.kiosk`; `kind` enforcement; TTLs
-staff 12h / kiosk 45min), `passwords.ts` (bcrypt cost 12 + pepper folding `pepper:plain`,
-`timingSafeEqual`, `maskIdentifier`), `index.ts` barrel.
+- `POST /api/v1/kiosk/sessions` — device-auth via `X-Kiosk-Id` + `X-Kiosk-Token` headers (sha256
+  hash compare), tenant-scoped, ACTIVE kiosk only, cross-tenant → 404. Returns
+  `{ sessionId, token, expiresAt, ttlMinutes, kiosk: {id,name}, tenant: {id,name,slug} }`.
+  `MEDIKIOSK_SESSION_TTL_MINUTES` honored (default 45).
+- `GET /api/v1/kiosk/sessions/:sessionId` — bearer session token; returns
+  `{ sessionId, patientId, locale, status, expiresAt, remainingSeconds, step, consent? }` with
+  `step` = IDENTITY | CONSENT | STOPPED | COMPLETE.
+- `PATCH /api/v1/kiosk/sessions/:sessionId` `{locale}` — state-preserving language switch;
+  existing consent's recorded locale is NOT rewritten (consent keeps the language originally
+  presented). Requires published consent wording for the target locale.
+- `POST /api/v1/kiosk/sessions/:sessionId/wipe` — session-token owner OR staff with
+  `kiosk.manage` (staff fallback catches only `UNAUTHENTICATED`, now correctly classified).
+  Deletes identity challenges + the session's replay buffers; marks session ENDED/wiped; retains
+  clinical record + audit. Response distinguishes transient vs record:
+  `{ wiped, transientArtifactsDeleted, identityChallengesDeleted, clinicalRecordRetained }`.
+- `sweep()` on app ready + every minute (unref'd timer, cleared on close): expires ACTIVE
+  sessions past TTL, deletes expired challenges and expired idempotency rows.
+- `app.ts`: `trustProxy: false` (per-IP throttle needs the real IP; behind a proxy the operator
+  must set it deliberately), routes registered, sweep timer wired.
 
-**`packages/i18n`** — Built by a teammate before the inference cap: 8 locales, 14 files. **Not
-re-verified this session.**
+### 2.3 Identity (synthetic only)
 
-**Docs** — 11 ADRs, `docs/api/CONTRACT.md` (761 lines), 12 architecture docs, SECURITY / FHIR /
-ABDM / BASELINE / LIMITATIONS. Written by a teammate; not line-by-line verified here.
+`services/api/src/identity/identity.service.ts`.
 
-### 2.2 API service (`services/api` — 43 source files, compiles clean, boots, login verified)
+- `POST /api/v1/kiosk/identity/start` `{method: GUEST|ABHA_OTP|ABHA_QR|RETURNING}`. Guest →
+  creates a minimal patient row bound to the session, returns
+  `{ guestRef, patientId, providerName:'mock', verified:false }`. OTP-style methods → mock
+  challenge `{ challengeId, otpLength:6, expiresAt, providerName:'mock' }`; demo OTP is always
+  `123456` (HMAC-SHA256 digest stored with the hash pepper; never the raw OTP).
+- `POST /api/v1/kiosk/identity/verify` — timing-safe compare, max 5 attempts, 5-minute challenge
+  TTL, one challenge per session (replaced on restart), consumed/patient-bound → 409.
+  Success binds the patient to the session and returns
+  `{ patientId, verified:true, providerName:'mock', displayNameMasked:'Synthetic demo participant' }`.
+- **Honesty:** `IDENTITY_PROVIDER !== 'mock'` → `IDENTITY_PROVIDER_UNAVAILABLE`. No real ABHA is
+  ever collected or claimed; the UI says so. Real ABDM/ABHA remains BLOCKED (no credentials).
 
-**Config**
-- `config/env.ts`: Zod-validated env. `loadConfig` **refuses to boot** when: production mode +
-  development-default secrets; postgres dialect without `DATABASE_URL`; `IDENTITY_PROVIDER=abha`
-  without ABDM credentials. Feature flags read from raw env with defaults in `FEATURE_DEFAULTS`.
-- `config/capabilities.ts`: `capabilitiesFor(config)` — labels every provider MOCKED / IMPLEMENTED /
-  PLANNED so a mock can never be presented as real.
-- `config/env-with-capabilities.ts`: re-export barrel used by `app.ts`.
+### 2.4 Consent engine
 
-**DB**
-- `db/kysely.ts`: `createDatabase` → SQLite (better-sqlite3, WAL, **foreign_keys=ON**) or Postgres
-  (pg pool with a fail-fast `tenants` probe). `transaction<T>()`. `AppDatabase = Kysely<Database>`.
-- `db/tables*.ts`: row interfaces for all 40 tables. `tables-system.ts` **imports** row types from
-  the other three files (this was the original TS2304 error source).
-- `db/schema.ts`: barrel re-export of every row type + `Database`.
-- `db/migrate.ts`: `runMigrations` using Kysely `db.schema` + `sql` template. Ledger
-  `schema_migrations` (id, applied_at) accessed via raw SQL because it is deliberately **not** typed
-  in `Database`. `create table if not exists` is valid on both engines.
-- `db/migrations/0001..0013` + `index.ts`: 13 migrations, all 40 tables. Types: `varchar(26)` ULIDs,
-  `varchar(30)` ISO-8601 UTC timestamps, `integer` for 0/1 booleans, `double precision` measurements,
-  `text` JSON.
-- `db/migrate-cli.ts`: dotenv → loadConfig → createDatabase → runMigrations → destroy.
-- `db/seed.ts`: `seedBase(db, pepper)` — idempotent tenant `demo-hospital`, 4 staff (`dr.rao`,
-  `nurse.mehta`, `triage.desk`, `admin.patil`; all password `demo-pass-1234`), 1 kiosk
-  (`OPD Block A Kiosk 2`; `DEMO_KIOSK_DEVICE_TOKEN = 'dev-kiosk-token-opd-a-2-replace-me'`, sha256
-  hashed), 3 consent versions (1.0.0 × en/hi/mr).
-- `db/seed-demo-patient.ts` (patient + encounters), `seed-demo-prior.ts` (prior facts: metformin,
-  Hb 11.2), `seed-demo-current.ts` (chest pain + dyspnoea, Hb 9.2, SpO2 93, "no medications"
-  statement **contradicted** by metformin, contradiction row), `seed-demo.ts` (orchestrator).
-  **Fixed ids** `01JDEMO00000000000000001..3` so the demo is addressable.
-- `db/seed-cli.ts`: `--profile base|demo`.
+`services/api/src/consent/{versions.ts, consent.service.ts}`, migration 0014 publishes consent
+**v1.1.0** (en-IN, hi-IN, mr-IN) with per-purpose `statementKey, statement, action, destination,
+translationVersion`; **v1.0.0 is preserved** (not rewritten).
 
-**Platform**
-- `platform/logger.ts`: pino with PHI key-pattern scrub + pino `redact.paths`; pretty only in
-  dev/test.
-- `platform/audit.ts`: `appendAuditEvent` — append-only, PHI-free, returns boolean, never throws.
-  Full `AuditAction` union (~50 actions).
-- `platform/http-errors.ts`: one error handler → contract envelope; ZodError → 400 with field list;
-  Fastify 4xx → generic code; unknown → 500 with cause logged server-side only. Also not-found
-  handler, `X-Request-Id` echo, and a guard that **rejects any `X-Tenant-Id` header**.
+- `GET /api/v1/consent/versions?locale=` — no auth (wording must be readable pre-auth).
+- `POST /api/v1/kiosk/consent` — `{ sessionId, patientId, consentVersion, locale, method:
+  TOUCH_CONFIRMED, decisions:[{purpose,granted,categories,action?,destination?}] }`. Validates
+  against the published version: decisions must cover every purpose, categories must be a subset,
+  declined purposes carry no categories, action/destination must match the published scope.
+  Partial consent is a first-class 201; declining everything is a 201 with `stopRequired:true`
+  (declining is valid input, never a coerced error). `granted:true` with empty categories grants
+  nothing. Consent `expiresAt` = session expiry; `sessionConsent` reads the latest row.
+- `POST /api/v1/consent/:consentId/revoke` `{reason:'PATIENT_REQUEST'}` — immediate; every
+  subsequent `requireConsent` guard fails. `stopRequired` reflects revocation/expiry/missing
+  treatment scope.
+- **`requireConsent(db, {tenantId, patientId, sessionId, purpose, category, action, destination})`**
+  — the domain-layer guard (ADR-007): session must exist/be active and patient-bound, consent
+  must exist, not revoked, not expired, and the exact purpose+category+action+destination must be
+  granted. Called inside the same transaction as the protected operation.
+- `GET /api/v1/patients/:patientId/consents` — staff `patient.read`.
 
-**Auth (under `auth/`)**
-- `auth/types.ts`: `LoginRequest`, `AuthenticatedPrincipal`, `LoginOutcome`.
-- `auth/repository/user.repo.ts`: `createUserSchema`, `parseRoles` (fails closed), `findUserByUsername`,
-  `findUserById`, `insertUser` (pepper passed in, never read from env here), `touchLastLogin`.
-- `auth/repository/tenant.repo.ts`: `findTenantBySlug`, `parseBranding`, `parseEnabledLocales`.
-- `auth/service/auth.service.ts`: `AuthService.login()` — check order tenant → user → password →
-  active → roles. **Unknown user performs a bcrypt compare against a cached dummy hash so the
-  unknown-user path costs the same as wrong-password** (prevents username enumeration by timing).
-  Byte-identical message for both: "Invalid username or password." Audit on every outcome.
-  Also `logout()`, `can()`, `permissionsFor()`.
-- `auth/middleware/authenticate.ts`: `authenticateStaff(request, config)` — audience
-  `medikiosk.staff` + `kind==='STAFF'`; expired → "session expired" message; other rejections →
-  generic 401.
-- `auth/routes/auth.routes.ts`: `POST /api/v1/auth/login` (200 token/expiresAt/user/permissions/
-  tenant), `POST /api/v1/auth/logout` (204), `GET /api/v1/auth/me` (200 user/tenant/permissions).
-  Login body uses `password: min(1)` deliberately — do not disclose the policy at login.
+### 2.5 Idempotency (replay)
 
-**App + entry**
-- `app.ts`: `buildApp({ config, db, logger, now? })` factory (not a singleton; tests need injection).
-  helmet, cors (origins from config), rate-limit global 300/min. `GET /health` (no DB),
-  `GET /ready` (DB probe), `GET /api/v1/capabilities`, auth routes. `trustProxy: true`,
-  `bodyLimit: 1 MiB`, custom `genReqId`.
-- `index.ts`: dotenv → loadConfig → logger (mock + dev-secrets warnings) → createDatabase → buildApp
-  → listen → SIGINT/SIGTERM graceful shutdown.
+`services/api/src/kiosk/replay.ts`. All mutating kiosk endpoints accept `Idempotency-Key`
+(UUID or ULID; anything else → 400). Scope = `tenant:actor:route`; stored key is a sha256 of
+that scope + key (actor :: `device:<id>` / `session:<id>` / `staff:<id>`); canonical-payload
+sha256 prevents offline OTP guessing; response cached **AES-256-GCM encrypted** with
+`MEDIKIOSK_SESSION_ENCRYPTION_KEY` (never a plaintext token/OTP). Same key+payload replays the
+original response; same key different payload → `409 IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD`;
+expired replay window → 409. `INSERT ... ON CONFLICT DO NOTHING` serializes concurrent same-key
+requests on both dialects.
+
+### 2.6 Patient kiosk UI
+
+`apps/kiosk/{index.html, vite.config.ts, tsconfig.json, src/{main.tsx, App.tsx, Consent.tsx,
+api.ts, styles.css}}`, i18n additions `packages/i18n/src/registration.ts` + catalogue keys
+(en-IN, hi-IN, mr-IN). React 18, plain CSS (teal/ink patient-first tokens), no UI framework.
+
+- Flow: **operator setup** (device id + token entered in-memory only, never bundled/stored) →
+  welcome (4-step progress, language grid: en/hi/mr enabled; gu/ta/te/bn/kn visibly disabled with
+  "Consent translation unavailable") → **Begin registration** (POST session, "45 min remaining"
+  shown) → identity (Continue as guest / synthetic demo OTP field `#demo-otp`) → consent screen
+  (purpose "Allow this purpose" + granular category checkboxes: Identity details, Symptoms and
+  history, Documents you upload, Voice recordings, Vitals, Session metrics; "Save my choices" /
+  "Decline all and save") → saved receipt → "Withdraw consent" → "Finish and clear this screen".
+- Language tiles call `changeLanguage` (GET consent/versions for locale + PATCH session when one
+  exists); in-memory state is preserved; no sessionStorage/localStorage anywhere.
+- Inactivity: warning dialog at 4 min, wipe + clear at 5 min OR server `expiresAt` (checked every
+  second + on visibilitychange). Wipe posts to the server, clears all patient state, shows a
+  cleared notice. No fake interview/OCR/offline capability; the receipt tells the patient
+  registration is saved and staff will continue (interview engine is not implemented).
+- Vite dev proxy `/api` → `API_PROXY_TARGET` (default `http://localhost:8080`); run from repo
+  root: `node node_modules/vite/bin/vite.js apps/kiosk --port 5173`.
+
+### 2.7 Capability honesty
+
+`services/api/src/config/{env.ts, capabilities.ts}` — boot warnings/capabilities now say the
+truth: identity MOCKED, llm/asr/tts/ocr PLANNED (no pipelines exist), abdm BLOCKED, all feature
+flags false. `docs/BASELINE.md` phase roadmap corrected (no phase is release-complete; statuses
+re-labelled); `docs/api/CONTRACT.md` gained an implementation-boundary note, the session `token`
+field, `PATCH` locale, guest `patientId`, and a synthetic-identity boundary note; `docs/deployment/LOCAL.md` written; `docs/PHASE-2-PLAN.md` records intent.
+
+### 2.8 Verification harness
+
+`scripts/smoke-kiosk.cjs` — throwaway-but-kept HTTP harness covering open/replay/409, guest,
+OTP failure cap, partial consent, locale PATCH, revoke→STOPPED, wipe, staff wipe.
 
 ---
 
-## 3. Files Changed (this subphase)
+## 3. Files changed this subphase (all uncommitted)
 
-Created (all new; the repo had no prior source):
+Created: `services/api/src/kiosk/{session.repo,replay,kiosk.service,kiosk.routes,lifecycle.test}.ts`,
+`services/api/src/identity/identity.service.ts`, `services/api/src/consent/{versions,consent.service}.ts`,
+`services/api/src/db/migrations/0014-session-lifecycle.ts`, `services/api/src/testing/test-app.ts`,
+`services/api/src/db/migrate.test.ts`, `services/api/src/auth/routes/auth.routes.test.ts`,
+`services/api/src/kiosk/...`, `packages/auth/src/__tests__/tokens.test.ts`, `vitest.config.ts`,
+`tsconfig.test.json`, `eslint.config.mjs`, `packages/i18n/src/registration.ts`,
+`apps/kiosk/**` (index.html, vite.config.ts, tsconfig.json, src/*), `docs/deployment/LOCAL.md`,
+`docs/PHASE-2-PLAN.md`, `scripts/smoke-kiosk.cjs`.
 
-| Path | Why it matters |
+Modified: root `package.json` (build/typecheck/lint/format/test wiring, kiosk appended),
+`package-lock.json`, `tsconfig.base.json` (format), all domain package sources (Prettier only),
+`services/api/src/{app,index}.ts`, `config/{env,capabilities,env-with-capabilities}.ts`,
+`db/{kysely,schema,migrate,migrate-cli,tables-system,migrations/index,seed,seed-cli,seed-demo*}.ts`,
+`db/migrations/0001..0013` (Prettier only), `auth/**` (now-injectable clock, touchLastLogin),
+`platform/*` (Prettier only), `docs/{BASELINE.md, api/CONTRACT.md}`. Deleted:
+`services/api/src/db/migrate-types.ts` (dead code, no callers).
+
+---
+
+## 4. Architecture / state
+
+```
+apps/kiosk (React 18, Vite 6, plain CSS)  ── /api proxy ──►  services/api (Fastify 5, CJS)
+services/api: config(Zod) → db(Kysely sqlite|postgres, 14 migrations) → auth + kiosk + identity
+              + consent modules (types/repo/service/routes pattern) → platform(logger/audit/errors)
+packages: shared-types ← clinical-schema ← safety-rules ; auth ; i18n (8 locales, en/hi/mr
+          + registration keys; others marked review-pending/unavailable)
+```
+
+- **Dependency order / staleness rule:** `services/api` resolves `@medikiosk/*` through their
+  compiled `dist/`. After changing any package, rebuild **that package** (`npm run build --workspace
+  @medikiosk/<name>`) and restart the API process — the smoke run caught this exact footgun
+  (auth fix + stale auth dist + running process = old behavior).
+- **Conventions kept:** timestamps ISO-8601 UTC `varchar(30)`, booleans `integer` 0/1, JSON
+  `text` + Zod at repo boundary, ULID ids, `tenantId` on every clinical row, tenant from the
+  principal (client-supplied `X-Tenant-Id` is rejected, 404 not 403 for cross-tenant), audit
+  append-only and PHI-free, extensionless relative imports, CommonJS.
+- **Boot:** `node services/api/dist/index.js` reads `.env` (git-ignored; dev defaults accepted
+  outside production). Smoke env: `MEDIKIOSK_SQLITE_PATH=…/phase2-smoke.sqlite`,
+  `API_PORT=8099` (8080 is occupied on this machine by Windows services; EACCES risk).
+
+---
+
+## 5. Decisions made this subphase (by Main or coordination)
+
+1. **Root build excludes manifest-only workspaces.** No empty `tsconfig.json` placeholder —
+   missing implementation must stay visible. Repayment: add the workspace to `build` when source
+   lands.
+2. **Classification fix is load-bearing:** audience error text ("unexpected") contains "exp";
+   check audience before expiry or staff tokens get mislabelled EXPIRED (broke staff wipe).
+3. **Idempotency scope = tenant+actor+route,** response cached encrypted (never plaintext
+   credentials), canonical-body HMAC keyed by the session key.
+4. **Consent 1.1.0 published; 1.0.0 preserved** (never silently rewrite published wording).
+5. **Wipe deletes only transient data** (challenges, replay buffers); clinical records, consent
+   and audit are retained (ADR-007); response makes the distinction explicit.
+6. **Synthetic identity only; `providerName:'mock'` everywhere**; demo OTP `123456`; real ABHA
+   BLOCKED. UI states this.
+7. **`trustProxy:false`** so the login throttle sees real IPs; operators behind a proxy must set
+   it deliberately.
+8. **Language switch preserves clinical state;** recorded consent locale is immutable (already
+   granted wording stays as presented).
+9. **Deterministic-lint wins over regex cosmetics:** script-union regexes replaced with Unicode
+   `\p{Script=…}` property escapes (also fixed ESLint `no-misleading-character-class` pairing
+   artifacts); behavior verified identical before committing the change.
+
+---
+
+## 6. Requirements and constraints (unchanged, re-affirmed)
+
+- The LLM is never the triage authority; no clinical claim without evidence; "not asked" is never
+  "no"; PHI never in logs; mocks must be declared (`/api/v1/capabilities`); production refuses
+  dev secrets; consent guard lives in the domain layer; never renumber `MK-*` codes / question
+  keys; never fabricate capability claims.
+- New: every mutating kiosk endpoint requires `Idempotency-Key` (UUID/ULID). Consent decisions
+  are validated against the published version. Sessions, challenges, idempotency rows all expire.
+
+---
+
+## 7. Testing and verification (all executed fresh this session)
+
+| Gate | Result |
 |---|---|
-| `packages/shared-types/src/{ids,provenance,response-state,triage,result,errors,clock,index}.ts` | Shared vocabulary; every other package imports from here. |
-| `packages/clinical-schema/src/**` (16 files incl. `ontology/` and `pathways/`) | Canonical clinical model, ontology, pathways, normalisation. |
-| `packages/safety-rules/src/{types,engine,assess,coverage,index}.ts` + `rules/{cardio-respiratory,neuro-infection,bleeding-metabolic,electrolyte-special}.ts` | Deterministic triage; 43 rules. |
-| `packages/auth/src/{permissions,tokens,passwords,index}.ts` | Reusable auth primitives. |
-| `services/api/src/config/{env,capabilities,env-with-capabilities}.ts` | Validated boot config + capability declaration. |
-| `services/api/src/db/{kysely,tables,tables-clinical,tables-evidence,tables-system,schema}.ts` | Row types + dual-dialect connection. |
-| `services/api/src/db/migrate.ts`, `db/migrate-cli.ts` | Migration runner + CLI. |
-| `services/api/src/db/migrations/0001..0013` + `index.ts` | All 40 tables. |
-| `services/api/src/db/{seed,seed-cli,seed-demo-patient,seed-demo-prior,seed-demo-current,seed-demo}.ts` | Idempotent seed + longitudinal demo case. |
-| `services/api/src/platform/{logger,audit,http-errors}.ts` | PHI-safe logging, audit writer, error mapping. |
-| `services/api/src/auth/{types.ts,middleware/authenticate.ts,repository/{user,tenant}.repo.ts,service/auth.service.ts,routes/auth.routes.ts}` | Working staff auth. |
-| `services/api/src/{app,index}.ts` | Fastify factory + bootstrap. |
-| `package.json`, `tsconfig.base.json`, `.gitignore`, `.env.example` | Workspace + toolchain. |
-| `docs/**` (29 markdown files) | ADRs, contract, architecture. |
+| `npm run build` (foundation + kiosk) | PASS — 6 packages tsc + kiosk tsc+vite (44 modules) |
+| `npm run typecheck` (kiosk tsc + tsconfig.test.json) | PASS |
+| `npm run lint` (`eslint . --max-warnings 0`) | PASS |
+| `npm test` (vitest, 5 files) | **27/27 PASS** — triage 10, migrate 2, auth 6, lifecycle 7, tokens 2 |
+| `npm run format:check` | PASS (after Prettier pass + tokens test format fix) |
+| Live HTTP smoke (`scripts/smoke-kiosk.cjs` vs real API on 8099, fresh migrate+seed) | ALL PASS: open+token, replay same key=same session, same key diff payload=409, guest, consent partial (analytics declined), view COMPLETE, PATCH locale hi-IN (consent locale stays en-IN), revoke→STOPPED, wipe→token SESSION_EXPIRED, 5 OTP fails + 6th correct=ATTEMPTS_EXCEEDED, staff wipe (identityChallengesDeleted=1) |
+| Browser (Vite dev, real API) | Provisioning screen, welcome 4-step + language grid (unavailable locales labelled), Begin → R200 consent/versions + R201 sessions ("45 min remaining"), guest → R201 identity/start, consent screen with purpose + granular categories, Save → consent row persisted (verified in DB: session `01M2R4VH…` + consent v1.1.0, en-IN). Withdraw/finish proven via HTTP smoke + app logic (inactivity/TTL wipe also in code). |
 
-Pre-existing from teammates (unchanged this subphase): `packages/i18n/**` (14 files),
-`packages/{evidence-model,fhir-models,ui}/package.json` (manifests only, **no source**),
-`apps/{kiosk,console}/package.json` (manifests only, **no source**),
-`docs/**`.
-
-Deleted: none of consequence. `packages/clinical-schema/src/lab-models.ts` was replaced by
-`lab-analysis.ts`; `index.ts` was updated accordingly. A broken `services/api/src/auth/repository/
-user.repo.ts` draft was rewritten in place (it had imported from a non-existent `../tokens.js`).
-
-Not created (manifests exist, source does not): `packages/evidence-model/src`,
-`packages/fhir-models/src`, `packages/ui/src`, `apps/kiosk/src`, `apps/console/src`,
-`infra/*`, `.github/workflows/*`, `scripts/*`, `data/*`, `evaluation/*`, `tests/*`.
+**Not verified:** Postgres dialect (never executed here), no real ABHA/OCR/ASR (blocked by
+design), no formal security review, no clinical validation.
 
 ---
 
-## 4. Current Architecture / State
+## 8. Known issues / risks
 
-```
-apps/kiosk (manifest only)   apps/console (manifest only)
-        │                            │
-        └──────────── HTTP ──────────┘
-                     │
-        services/api  (Fastify 5, CommonJS)
-        ├─ config/    env (Zod) + capabilities
-        ├─ db/        Kysely (sqlite | postgres), tables, migrations, seed
-        ├─ auth/      repository → service → routes, middleware
-        └─ platform/  logger (pino, PHI scrub), audit, http-errors
-                     │
-   packages/: shared-types ← clinical-schema ← safety-rules
-                              clinical-schema ← auth (peer via @medikiosk/auth)
-```
-
-- **Package dependency direction:** `shared-types` has no workspace deps. `clinical-schema` depends
-  on `shared-types` + `zod`. `safety-rules` depends on `clinical-schema` + `shared-types` + `zod`
-  (it reuses `evaluateTrigger` / `TriggerContext` rather than defining a second expression language).
-  `auth` depends on `shared-types` + `bcryptjs` + `jose` + `zod`. `services/api` depends on all of
-  the above + `fastify` + `kysely` + `better-sqlite3` + `pg` + `pino` + `ulid` + `dotenv`.
-- **Data flow (auth):** request → `auth.routes` → `AuthService.login` → `tenant.repo.findTenantBySlug`
-  → `user.repo.findUserByUsername` → `verifyPassword` (bcrypt + pepper) → `signStaffToken` →
-  `appendAuditEvent`. Subsequent requests: `Authorization: Bearer` → `authenticateStaff` →
-  `verifyToken` (audience + kind) → principal.
-- **Storage conventions:** every clinical table has `tenantId` + index; timestamps are ISO-8601 UTC
-  `varchar(30)`; booleans are `integer` 0/1; JSON is `text` with Zod parsing at the repository
-  boundary; ids are 26-char ULIDs via `ulid()`.
-- **Env required to boot locally:** `MEDIKIOSK_JWT_SECRET`, `MEDIKIOSK_SESSION_ENCRYPTION_KEY`,
-  `MEDIKIOSK_HASH_PEPPER` (dev defaults accepted outside production),
-  `MEDIKIOSK_SQLITE_PATH` (default `./.medikiosk-data/medikiosk.sqlite`). See `.env.example`.
-- **Build:** each package compiles independently with `tsc -p tsconfig.json` (CommonJS, `dist/`).
-  `services/api` imports workspace packages via their `dist/` (`main`/`types` in package.json), so
-  **packages must be built before `services/api` type-checks against them**.
-- **Feature flags** are env-driven (`FEATURE_*`), read in `env.ts::readFeatureFlag`, exposed via
-  `/api/v1/capabilities`. No DB-backed flag store yet.
+1. **All this subphase's work is uncommitted.** Make the next commit soon.
+2. **Vite dev harness flakiness observed:** one-time "optimized dependencies… reload" reloads
+   destroy in-browser execution contexts mid-flow — a dev-server artifact, not an app defect,
+   but it makes browser automation flaky on first interaction after dependency optimization.
+3. **Trusted users restore `trustProxy:true`** when deploying behind a reverse proxy — otherwise
+   the login throttle keys on the proxy IP.
+4. `docs/BASELINE.md` §2–§6 still contain wording that reads like completed mitigations; the
+   continuity correction + corrected roadmap at the top/§8 govern.
+5. `MEDIKIOSK_TEMP_RETENTION_MINUTES` is unused by any real temp-artifact pipeline (none exists);
+   it now bounds only the sweep interval floor via `Math.min(60_000, …)`.
+6. Consent v1.1.0 hi-IN/mr-IN wording is machine-drafted (`PROVISIONAL` — native clinical review
+   required per LIMITATIONS §7).
+7. `apps/console`, `packages/{evidence-model,fhir-models,ui}` remain manifest-only; `data/`,
+   `evaluation/`, `infra/`, `.github/workflows/` empty.
 
 ---
 
-## 5. Decisions Made
+## 9. Unfinished work / next steps
 
-1. **Dual-dialect DB via Kysely, not Prisma.** Prisma binds one schema to one provider. Kysely's
-   `db.schema` builder is dialect-neutral and maintained by the query library. Consequence:
-   `db/migrate-types.ts` (a custom `MigrationBuilder` abstraction) is now **dead code** — the runner
-   does not use it. Consider deleting it in the next phase.
-2. **Migration ledger via raw SQL.** `schema_migrations` is infrastructure, not domain data; typing it
-   in `Database` would invite application code to read it.
-3. **Booleans as `integer` 0/1; timestamps as ISO `varchar(30)`.** SQLite has no native boolean and no
-   shared time function with Postgres. Repositories must map to `boolean` at the boundary.
-4. **Unknown-user login burns a bcrypt compare.** Prevents username enumeration by timing. The dummy
-   hash is cached per process (a full bcrypt per failed lookup would be a DoS vector). Preserve this.
-5. **Single error handler in `platform/http-errors.ts`.** Routes throw `MediKioskError`; they never
-   map status codes. Adding an error code means editing `ERROR_CODES`/`ERROR_STATUS` in
-   `packages/shared-types/src/errors.ts` and nothing else.
-6. **`X-Tenant-Id` header is rejected.** Tenant always comes from the token.
-7. **Login body `password: min(1)`, creation `min(8)`.** Do not disclose the password policy from the
-   login endpoint.
-8. **`packages/safety-rules` reuses clinical-schema's trigger language.** One grammar for pathways and
-   rules. Changing `TriggerContext` affects both; rebuild clinical-schema before safety-rules.
-9. **Gapped concept matching added.** Exact longest-match alone missed code-mixed input ("chest mein
-   kal se pain"). The gapped pass requires all content words and only skips stopwords — do not loosen
-   it without a false-positive check.
-10. **Seed uses fixed ids** (`01JDEMO...`) so demo and evaluation can address fixtures.
-11. **`app.ts` is a factory**, not a module-level instance, so tests can inject config/db/clock.
-12. **CommonJS everywhere** (`tsconfig.base.json`, moduleResolution Node). Imports in `services/api`
-    are **extensionless**; `.js` extensions in relative imports broke resolution earlier.
-13. **`sync_jobs` (interop outbox) vs `jobs` (internal background work)** are separate tables on
-    purpose — a backlog in one must not starve the other.
+- **Commit** the subphase (recommended: split into foundation closure, lifecycle API, kiosk UI,
+  docs).
+- Phase 3 (interview engine runtime): the domain vocabulary, pathways (70 question keys) and
+  safety rules exist; the stateful `InterviewSession → policy → question → response → evidence`
+  loop, enc/encounter routes, and the `POST /encounters/:id/submit` triage/queue wiring do not.
+- Then: voice/touch fallback (Phase 4), documents (Phase 5), physician console (Phase 9) —
+  each must replicate the types/repo/service/routes pattern and the idempotency + audit +
+  consent-guard conventions now established.
+- `docs/LIMITATIONS.md` should be re-snapshotted (its §2.3 measured state predates this work).
 
 ---
 
-## 6. Requirements and Constraints
+## 10. Critical context
 
-- **The LLM is never the triage authority.** Only `packages/safety-rules` (deterministic) may set a
-  triage level (ADR-009).
-- **No clinical claim without evidence.** Claims reference `evidence` rows; `originClass` is one of
-  four values and is never silently converted (ADR-005).
-- **"Not asked" is never "no".** `allergy_status` is separate from `allergy_records`;
-  `RESPONSE_STATES.DECLINED` / `UNKNOWN` are terminal and must never be coerced to a negative.
-- **PHI never in logs.** `platform/logger.ts` scrubs; `platform/audit.ts` writes codes/keys/counts
-  only. `LOG_PHI` defaults false.
-- **Tenant isolation.** Every clinical row has `tenantId`; repositories take the tenant from the
-  principal, never the request body; cross-tenant reads should 404, not 403.
-- **Audit is append-only.** No update/delete path for `audit_events`.
-- **Mocks must be declared.** `/api/v1/capabilities` must keep reporting OCR/LLM/identity as MOCKED
-  while they are mocks.
-- **Production refuses dev-default secrets** (`env.ts`). Do not weaken this.
-- **Relative imports in `services/api` are extensionless** (moduleResolution Node). Do not add `.js`.
-- **Consent guard before sensitive processing** — not yet implemented. When adding it, put the guard
-  in the service/domain layer, not the route (ADR-007).
-- **Idempotency-Key** on mutating endpoints — not yet implemented; the ledger table exists.
-- **Never renumber `MK-*` concept codes** or pathway question keys once published; evidence and
-  localisation reference them.
-- **Never fabricate capability claims.** Statuses are IMPLEMENTED / PARTIALLY IMPLEMENTED / MOCKED /
-  PLANNED / BLOCKED (see `docs/LIMITATIONS.md`).
+- **PowerShell:** `;`, not `&&`; use `C:/` paths; tsx lives at repo root
+  (`node node_modules/tsx/dist/cli.mjs …`).
+- **Smoke recipe:** `.env` with `API_PORT=8099`, `MEDIKIOSK_SQLITE_PATH=…
+  /phase2-smoke.sqlite`; `node node_modules/tsx/dist/cli.mjs services/api/src/db/migrate-cli.ts`;
+  `… seed-cli.ts --profile demo` (prints kiosk id — kiosk 2 id `01M2QB2V9XGWNFTT8YJXTTWHPP` in
+  the smoke DB; device token `dev-kiosk-token-opd-a-2-replace-me`); `node services/api/dist/index.js`;
+  `node node_modules/vite/bin/vite.js apps/kiosk --port 5173` with `API_PROXY_TARGET=http://127.0.0.1:8099`.
+- Rebuild-order rule (§4) — package dist staleness caused a real regression during this session.
+- Staff demo login: tenant `demo-hospital`, `dr.rao`/`nurse.mehta`/`triage.desk`/`admin.patil`,
+  password `demo-pass-1234`. Staff wipe requires `kiosk.manage` (admin.patil holds it).
+- **Audit actions now in play:** SESSION_OPENED, SESSION_WIPED, INTERVIEW_LANGUAGE_CHANGED,
+  IDENTITY_FLOW_STARTED, IDENTITY_VERIFIED, IDENTITY_VERIFICATION_FAILED, CONSENT_GRANTED /
+  CONSENT_PARTIAL / CONSENT_DECLINED, CONSENT_REVOKED, CONSENT_VIEWED (+ staff auth actions).
 
----
-
-## 7. Testing and Verification
-
-**Actually executed this session (all passed):**
-
-| Check | Command | Result |
-|---|---|---|
-| Type-check ×5 | `node_modules\.bin\tsc.cmd --project <tsconfig>` for shared-types, clinical-schema, safety-rules, auth, services/api | exit 0 for all five |
-| Migrations on fresh SQLite | `node node_modules/tsx/dist/cli.mjs services/api/src/db/migrate-cli.ts` | "Applied 13 migration(s): 0001_identity … 0013_admin" |
-| Seed base + demo | `… seed-cli.ts --profile demo` | "Seeded tenant …: 4 staff, 1 kiosk(s), 3 consent version(s)" + "Seeded demo case" |
-| Server boot | `node services/api/dist/index.js` (port 8099) | Boot logs with four mock/dev-secrets warnings, then listens |
-| `GET /health` | HTTP GET | **200** `{"status":"ok","version":"0.1.0","uptimeSeconds":5}` |
-| `GET /api/v1/capabilities` | HTTP GET | **200** |
-| `POST /api/v1/auth/login` valid | `{"tenantSlug":"demo-hospital","username":"dr.rao","password":"demo-pass-1234"}` | **200**, JWT with roles `["PHYSICIAN"]` |
-| `POST /api/v1/auth/login` unknown user | `username:"ghost"` | **401** |
-| `POST /api/v1/auth/login` unseeded tenant | against migrated-but-unseeded DB | **403** (UNKNOWN_TENANT) — correct |
-
-**Not executed / not verified:**
-- **No vitest tests exist.** `vitest run` finds zero `*.test.ts` files; nothing is under automated
-  test. The verification above was manual against a running server.
-- `GET /api/v1/auth/me` and `POST /api/v1/auth/logout` were **not** called (routes compile; the guard
-  path is unexercised).
-- **Postgres dialect never executed** (no Postgres available). The pg path compiles; only SQLite ran.
-- `packages/i18n` compile/tests were not re-run this session.
-- No root `npm run build` / `npm run test` / lint / format check was run; there is no root vitest
-  config yet.
-
----
-
-## 8. Known Issues / Risks
-
-**Confirmed:**
-1. **Zero automated tests.** The clinical schema, safety engine and auth flow have no unit tests.
-2. **`db/migrate-types.ts` is dead code** (the runner uses Kysely's schema builder directly).
-3. **Zero git commits.** All work is untracked on `main`.
-4. `packages/evidence-model`, `packages/fhir-models`, `packages/ui`, both apps, `infra/`,
-   `.github/workflows/`, `scripts/`, `data/`, `evaluation/`, `tests/` have **manifests but no source**.
-5. `db/seed.ts` still declares a `SeedReport` interface no longer used as its return type.
-
-**Might be problems (unverified):**
-6. Kysely `createIndex(...).unique()` — migrations ran, but uniqueness was not tested with duplicate
-   inserts.
-7. Postgres column-type acceptance (`double precision`, `varchar(30)`) is reasoned, not executed.
-8. Rate limiting is global 300/min with no per-route login throttling yet (contract calls for 429 on
-   brute force).
-9. Contract endpoints beyond auth (encounters, interview, documents, triage, summary, FHIR, ABDM,
-   admin) are specified but **not implemented**.
-
----
-
-## 9. Unfinished Work
-
-- **No vitest config or tests** — implied by "Definition of endpoint done" (contract §17).
-- **`/auth/me`, `/auth/logout` untested**, even manually.
-- **`touchLastLogin` defined but never called** by `AuthService.login` — call it or remove it.
-- **Kiosk device-token auth** (`X-Kiosk-Id` + `X-Kiosk-Token`) and `POST /api/v1/kiosk/sessions` are
-  not implemented; `kiosks.deviceTokenHash` and `signKioskToken` exist unused.
-- **Idempotency middleware** not implemented despite the table.
-- **Per-route rate limit on login** not configured.
-- **`migrate-types.ts` dead code** to delete.
-- **Git initial commit** not made.
-- **`infra/`, `.github/workflows/`, `scripts/`** were planned but never created (teammate failed).
-
----
-
-## 10. Next Subphase
-
-Recommended order (Phase 2 per `docs/BASELINE.md`: kiosk, identity, consent, localisation — but close
-the foundation gaps first):
-
-1. **Make an initial git commit** of the current state.
-2. **Add a root `vitest.config.ts`** (include `packages/**/*.test.ts`, `services/**/*.test.ts`,
-   `tests/**/*.test.ts`) and first tests: `evaluateTriage` (determinism, chest-pain+dyspnoea → RED,
-   chest-pain alone → GREEN, SpO2/systolic thresholds, DATA_INCOMPLETE advisory), `AuthService.login`
-   (unknown-user and wrong-password produce identical messages), migration idempotence, and
-   `/health` + login/me/logout via `app.inject`.
-3. **Wire `touchLastLogin`** into a successful login.
-4. **Implement kiosk session endpoints** (`POST /api/v1/kiosk/sessions`, `.../wipe`,
-   `GET /api/v1/kiosk/sessions/:id`) using `signKioskToken` and the sha256 device-token compare —
-   this unblocks the kiosk app.
-5. **Implement consent endpoints** (`GET /api/v1/consent/versions`,
-   `POST /api/v1/kiosk/consent`, `POST /api/v1/consent/:id/revoke`) with the guard in the service
-   layer.
-6. **Then** start `apps/kiosk` (Vite + React 18 + Tailwind 3; manifest exists) against the seeded
-   demo data.
-7. Keep `/api/v1/capabilities` in sync with every provider introduced.
-
-Files likely involved: `services/api/src/auth/**`, new `services/api/src/kiosk/**`,
-new `services/api/src/consent/**`, `vitest.config.ts`, `apps/kiosk/src/**`.
-
----
-
-## 11. Critical Context
-
-- **Rebuild order matters:** `shared-types` → `clinical-schema` → (`safety-rules`, `auth`) →
-  `services/api`. `services/api` resolves workspace packages through their `dist/`, so a stale
-  `dist/` causes phantom type errors.
-- **Running tsx (Windows PowerShell):** the working invocation is
-  `node 'C:/Projects/MediKiosk/node_modules/tsx/dist/cli.mjs' '<script.ts>'` with env vars set via
-  `;`-separated statements. tsx lives at the **repo root**, not in `services/api/node_modules`.
-- **Path style:** use `C:/...` forward slashes; `&&` is **not** a valid separator in this PowerShell
-  environment — use `;`.
-- **better-sqlite3 ships prebuilt binaries** inside the npm package — no compiler needed.
-  `allowScripts` in the root `package.json` whitelists `esbuild`; blocking `node-gyp` for
-  better-sqlite3 is harmless.
-- **`evaluateTrigger` is total and never throws**; a missing fact makes a positive predicate false.
-  Correct for pathway entry, but safety handles missing data separately via the advisory rule
-  `DATA_INCOMPLETE_SAFETY_001`, keyed off `safetyCriticalUnresolvedQuestionKeys`.
-- **Vitals in the trigger context are double-keyed**: `MK-VIT-001:SYSTOLIC` and plain `MK-VIT-001`,
-  so blood-pressure rules can target a component. Implausible vitals are **excluded** from rule
-  evaluation but still stored and flagged.
-- **Demo credentials:** tenant `demo-hospital`; users `dr.rao`, `nurse.mehta`, `triage.desk`,
-  `admin.patil`, all password `demo-pass-1234`; kiosk device token
-  `dev-kiosk-token-opd-a-2-replace-me`.
-- **Dev secrets (local only):** `dev-only-insecure-jwt-secret-replace-me`,
-  `dev-only-insecure-session-key-replace-me`, `dev-only-insecure-pepper-replace-me`.
-- **Teammates:** the four agents spawned earlier all failed (inference cap / connectivity). What
-  survived from them: `packages/i18n/**` and `docs/**`. `infra/`, `.github/workflows/`, `scripts/`
-  were **not** created despite the plan.
-- **`.medikiosk-data/`** holds local SQLite DBs (`medikiosk.sqlite`, `verify-handoff.sqlite`) and
-  server logs; it is git-ignored.
-
----
-
-## 12. Agent Instructions
-
-**State:** five packages compile clean; `services/api` compiles, boots and serves a verified staff
-login on SQLite; 13 migrations apply cleanly; seed is idempotent; **zero tests, zero commits, no UI,
-no infra, no CI**.
-
-**Inspect first, in this order:**
-1. `docs/api/CONTRACT.md` — the authoritative endpoint spec.
-2. `docs/adr/ADR-001..011` — the binding architectural decisions.
-3. `packages/clinical-schema/src/pathways/index.ts` and `packages/safety-rules/src/assess.ts` — the
-   two engines everything else will call.
-4. `services/api/src/app.ts` and `auth/service/auth.service.ts` — the working pattern to copy for
-   every new module (types.ts / repository / service / routes; routes do validate → call → format).
-
-**Do not rewrite:** the domain packages, the migration set, the auth service's timing-equalisation
-behaviour, the central error handler and envelope, the PHI-scrubbing logger, or the seed fixtures'
-fixed ids.
-
-**Preserve:** the rules in §6 (they are the product's safety spine) and the working dev workflow in
-§11 (tsx path, PowerShell `;` separators, forward-slash paths).
-
-**Next objective:** close the foundation gaps (git commit, vitest + first tests, `touchLastLogin`,
-kiosk session endpoints, consent endpoints), then begin `apps/kiosk` against the seeded demo data.
+**Next objective:** commit this subphase, then begin Phase 3 interview runtime against the
+existing pathways/evidence model, keeping the lifecycle + idempotency + consent-guard conventions.

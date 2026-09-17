@@ -6,31 +6,31 @@
  * ambiguity is exactly what the provenance layer exists to prevent.
  */
 
-import type { ClinicalConcept } from '../concept';
-import { buildConceptIndex, type ConceptIndex } from '../concept-index';
-import { CARDIO_RESPIRATORY_SYMPTOMS } from './symptoms-cardiorespiratory';
-import { RESPIRATORY_AND_SYSTEMIC_SYMPTOMS } from './symptoms-respiratory-systemic';
-import { NEUROLOGICAL_SYMPTOMS } from './symptoms-neurological';
-import { GI_GU_SYMPTOMS } from './symptoms-gi-gu';
-import { CONDITION_CONCEPTS } from './conditions';
-import { MEDICATION_CONCEPTS } from './medications';
-import { ALLERGY_CONCEPTS } from './allergies';
-import { HISTORY_FACT_CONCEPTS } from './history-facts';
-import { AYUSH_CONCEPTS } from './ayush';
-import { VITAL_DEFINITIONS } from './vitals';
-import { LAB_TEST_DEFINITIONS } from './labs';
+import type { ClinicalConcept } from "../concept";
+import { buildConceptIndex, type ConceptIndex } from "../concept-index";
+import { CARDIO_RESPIRATORY_SYMPTOMS } from "./symptoms-cardiorespiratory";
+import { RESPIRATORY_AND_SYSTEMIC_SYMPTOMS } from "./symptoms-respiratory-systemic";
+import { NEUROLOGICAL_SYMPTOMS } from "./symptoms-neurological";
+import { GI_GU_SYMPTOMS } from "./symptoms-gi-gu";
+import { CONDITION_CONCEPTS } from "./conditions";
+import { MEDICATION_CONCEPTS } from "./medications";
+import { ALLERGY_CONCEPTS } from "./allergies";
+import { HISTORY_FACT_CONCEPTS } from "./history-facts";
+import { AYUSH_CONCEPTS } from "./ayush";
+import { VITAL_DEFINITIONS } from "./vitals";
+import { LAB_TEST_DEFINITIONS } from "./labs";
 
-export * from './symptoms-cardiorespiratory';
-export * from './symptoms-respiratory-systemic';
-export * from './symptoms-neurological';
-export * from './symptoms-gi-gu';
-export * from './conditions';
-export * from './medications';
-export * from './allergies';
-export * from './history-facts';
-export * from './ayush';
-export * from './vitals';
-export * from './labs';
+export * from "./symptoms-cardiorespiratory";
+export * from "./symptoms-respiratory-systemic";
+export * from "./symptoms-neurological";
+export * from "./symptoms-gi-gu";
+export * from "./conditions";
+export * from "./medications";
+export * from "./allergies";
+export * from "./history-facts";
+export * from "./ayush";
+export * from "./vitals";
+export * from "./labs";
 
 export const ALL_SYMPTOM_CONCEPTS: readonly ClinicalConcept[] = [
   ...CARDIO_RESPIRATORY_SYMPTOMS,
@@ -53,42 +53,39 @@ export const ALL_CONCEPTS: readonly ClinicalConcept[] = [
   ...ALLERGY_CONCEPTS,
   ...HISTORY_FACT_CONCEPTS,
   ...AYUSH_CONCEPTS,
-  ...VITAL_DEFINITIONS.map(
-    (vital): ClinicalConcept => ({
-      code: vital.code,
-      category: 'VITAL',
-      display: vital.display,
-      synonyms: [...vital.aliases],
-      standardCoding: [],
-      pathways: [],
-      redFlagRelevant: true,
-      potentiallyEmergent: false,
-    }),
-  ),
-  ...LAB_TEST_DEFINITIONS.map(
-    (lab): ClinicalConcept => ({
-      code: lab.code,
-      category: 'LAB_TEST',
-      display: lab.display,
-      synonyms: [...lab.aliases],
-      standardCoding: lab.standardCoding ? [...lab.standardCoding] : [],
-      pathways: [],
-      redFlagRelevant: true,
-      potentiallyEmergent: false,
-    }),
-  ),
+  ...VITAL_DEFINITIONS.map((vital): ClinicalConcept => ({
+    code: vital.code,
+    category: "VITAL",
+    display: vital.display,
+    synonyms: [...vital.aliases],
+    standardCoding: [],
+    pathways: [],
+    redFlagRelevant: true,
+    potentiallyEmergent: false,
+  })),
+  ...LAB_TEST_DEFINITIONS.map((lab): ClinicalConcept => ({
+    code: lab.code,
+    category: "LAB_TEST",
+    display: lab.display,
+    synonyms: [...lab.aliases],
+    standardCoding: lab.standardCoding ? [...lab.standardCoding] : [],
+    pathways: [],
+    redFlagRelevant: true,
+    potentiallyEmergent: false,
+  })),
 ];
 
 export const CONCEPT_INDEX: ConceptIndex = buildConceptIndex(ALL_CONCEPTS);
 
 /** Every concept code the safety vocabulary expects a rule set to be able to reference. */
-export const RED_FLAG_RELEVANT_CONCEPT_CODES: readonly string[] = ALL_CONCEPTS.filter(
-  (concept) => concept.redFlagRelevant,
-).map((concept) => concept.code);
+export const RED_FLAG_RELEVANT_CONCEPT_CODES: readonly string[] =
+  ALL_CONCEPTS.filter((concept) => concept.redFlagRelevant).map(
+    (concept) => concept.code,
+  );
 
 /** Complaint codes that may open an interview pathway. */
 export const COMPLAINT_CONCEPT_CODES: readonly string[] = ALL_CONCEPTS.filter(
-  (concept) => concept.category === 'SYMPTOM',
+  (concept) => concept.category === "SYMPTOM",
 ).map((concept) => concept.code);
 
 /**
@@ -99,10 +96,10 @@ export const COMPLAINT_CONCEPT_CODES: readonly string[] = ALL_CONCEPTS.filter(
  * come first so that the highest-acuity presentation is one tap away.
  */
 export const CHIEF_COMPLAINT_STARTER_CODES: readonly string[] = [
-  'MK-SYM-001',
-  'MK-SYM-002',
-  'MK-SYM-020',
-  'MK-SYM-007',
-  'MK-SYM-030',
-  'MK-SYM-040',
+  "MK-SYM-001",
+  "MK-SYM-002",
+  "MK-SYM-020",
+  "MK-SYM-007",
+  "MK-SYM-030",
+  "MK-SYM-040",
 ];

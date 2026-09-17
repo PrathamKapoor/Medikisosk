@@ -1,14 +1,15 @@
-import type { Catalogue, LocaleCode } from './types';
-import { LOCALE_CODES } from './types';
+import type { Catalogue, LocaleCode } from "./types";
+import { LOCALE_CODES } from "./types";
+import { REGISTRATION_CATALOGUES } from "./registration";
 
-import { enIN } from './locales/en-IN';
-import { hiIN } from './locales/hi-IN';
-import { mrIN } from './locales/mr-IN';
-import { guIN } from './locales/gu-IN';
-import { taIN } from './locales/ta-IN';
-import { teIN } from './locales/te-IN';
-import { bnIN } from './locales/bn-IN';
-import { knIN } from './locales/kn-IN';
+import { enIN } from "./locales/en-IN";
+import { hiIN } from "./locales/hi-IN";
+import { mrIN } from "./locales/mr-IN";
+import { guIN } from "./locales/gu-IN";
+import { taIN } from "./locales/ta-IN";
+import { teIN } from "./locales/te-IN";
+import { bnIN } from "./locales/bn-IN";
+import { knIN } from "./locales/kn-IN";
 
 /**
  * The complete set of catalogues keyed by locale.
@@ -18,14 +19,14 @@ import { knIN } from './locales/kn-IN';
  * than a silent runtime fallback to English at the bedside.
  */
 export const CATALOGUES: Record<LocaleCode, Catalogue> = {
-  'en-IN': enIN,
-  'hi-IN': hiIN,
-  'mr-IN': mrIN,
-  'gu-IN': guIN,
-  'ta-IN': taIN,
-  'te-IN': teIN,
-  'bn-IN': bnIN,
-  'kn-IN': knIN,
+  "en-IN": { ...enIN, ...REGISTRATION_CATALOGUES["en-IN"] },
+  "hi-IN": { ...hiIN, ...REGISTRATION_CATALOGUES["hi-IN"] },
+  "mr-IN": { ...mrIN, ...REGISTRATION_CATALOGUES["mr-IN"] },
+  "gu-IN": guIN,
+  "ta-IN": taIN,
+  "te-IN": teIN,
+  "bn-IN": bnIN,
+  "kn-IN": knIN,
 };
 
 /** Alias kept for call sites that talk about "supported" rather than "codes". */
