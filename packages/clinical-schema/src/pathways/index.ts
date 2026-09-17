@@ -9,7 +9,9 @@
 
 import type { InterviewPathway } from "../pathway-model";
 import { validatePathway } from "../pathway-model";
+import type { SocratesProfile } from "../socrates";
 import { CHEST_PAIN_PATHWAY } from "./chest-pain-pathway";
+import { CHEST_PAIN_SOCRATES_PROFILE } from "./chest-pain";
 import { HISTORY_GENERAL_PATHWAY } from "./history-general";
 import { FEVER_PATHWAY, RESPIRATORY_PATHWAY } from "./fever-respiratory";
 import { HEADACHE_PATHWAY, ABDOMINAL_PATHWAY } from "./headache-abdominal";
@@ -36,6 +38,23 @@ export const PATHWAYS: readonly InterviewPathway[] = [
 export const PATHWAY_BY_KEY: ReadonlyMap<string, InterviewPathway> = new Map(
   PATHWAYS.map((pathway) => [pathway.key, pathway]),
 );
+
+/**
+ * SOCRATES profiles by complaint code.
+ *
+ * A complaint without a profile has no SOCRATES completion requirement; a complaint with one
+ * defines which dimensions must be closed before that complaint is considered characterised. The
+ * interview engine consults this registry; adding a profile for a new complaint is a data change,
+ * not an engine change.
+ */
+export const SOCRATES_PROFILES: Readonly<
+  Partial<Record<string, SocratesProfile>>
+> = {
+  // The pathway file declares the profile as a read-only literal (`as const`); the registry
+  // adapts it once to the canonical schema type so engine consumers need no casts of their own.
+  [CHEST_PAIN_SOCRATES_PROFILE.complaintCode]:
+    CHEST_PAIN_SOCRATES_PROFILE as unknown as SocratesProfile,
+};
 
 /** Pathways whose complaint list covers the given complaint code. */
 export function pathwaysForComplaint(
