@@ -17,6 +17,7 @@ import type {
 } from "./tables";
 import type {
   QuestionnaireResponseRow,
+  InterviewSessionRow,
   SymptomRow,
   MedicationRow,
   AllergyRecordRow,
@@ -189,6 +190,7 @@ export interface Database {
   consent_versions: ConsentVersionRow;
   consents: ConsentRow;
   encounters: EncounterRow;
+  interview_sessions: InterviewSessionRow;
   questionnaire_responses: QuestionnaireResponseRow;
   symptoms: SymptomRow;
   medications: MedicationRow;

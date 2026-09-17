@@ -25,8 +25,31 @@ export interface QuestionnaireResponseRow {
   negated: number;
   uncertain: number;
   askCount: number;
+  hintMismatch: number;
   answeredAt: string | null;
   createdAt: string;
+}
+
+/**
+ * Interview lifecycle bookkeeping. The interview's clinical state is derived from
+ * questionnaire_responses + clinical facts (ADR-012); this row records which pathway set,
+ * pathway version and runtime version produced the history, and the lifecycle status.
+ */
+export interface InterviewSessionRow {
+  id: string;
+  tenantId: string;
+  encounterId: string;
+  patientId: string;
+  kioskSessionId: string;
+  status: string;
+  pathwayKeysJson: string;
+  pathwayVersion: string;
+  runtimeVersion: string;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
 }
 
 export interface SymptomRow {

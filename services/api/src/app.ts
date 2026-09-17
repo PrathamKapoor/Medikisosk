@@ -26,6 +26,8 @@ import { AuthService } from "./auth/service/auth.service";
 import { registerAuthRoutes } from "./auth/routes/auth.routes";
 import { KioskService } from "./kiosk/kiosk.service";
 import { registerKioskRoutes } from "./kiosk/kiosk.routes";
+import { InterviewService } from "./interview/interview.service";
+import { registerInterviewRoutes } from "./interview/interview.routes";
 
 export interface BuildAppDeps {
   readonly config: AppConfig;
@@ -103,6 +105,8 @@ export async function buildApp(deps: BuildAppDeps): Promise<FastifyInstance> {
   await registerAuthRoutes(app, { authService, config, now });
   const kioskService = new KioskService({ db, logger, config, now });
   await registerKioskRoutes(app, kioskService);
+  const interviewService = new InterviewService({ db, config, logger, now });
+  await registerInterviewRoutes(app, interviewService);
   let cleanupTimer: NodeJS.Timeout | undefined;
   let cleanupRunning: Promise<void> | undefined;
   app.addHook("onReady", async () => {
