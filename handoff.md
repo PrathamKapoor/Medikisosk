@@ -25,8 +25,8 @@ intake platform for Indian OPDs, with deterministic safety rules, evidence-groun
 FHIR/ABDM interoperability. The master prompt's later phases are separate work; the contract and
 the ADRs remain the design authority.
 
-**Repository note:** git is on `main` with one commit (`4e497c8` "Phase 1: foundation…"). All of
-this subphase's work is **uncommitted** — the first commit of this work should be made soon.
+**Repository note:** git is on `main`; commits `4e497c8` (Phase 1 foundation) and **`0a4a28e`
+(this subphase)**. Working tree is clean.
 
 ---
 
@@ -271,7 +271,7 @@ design), no formal security review, no clinical validation.
 
 ## 8. Known issues / risks
 
-1. **All this subphase's work is uncommitted.** Make the next commit soon.
+1. ~~All this subphase's work is uncommitted.~~ **Resolved** — committed as `0a4a28e`.
 2. **Vite dev harness flakiness observed:** one-time "optimized dependencies… reload" reloads
    destroy in-browser execution contexts mid-flow — a dev-server artifact, not an app defect,
    but it makes browser automation flaky on first interaction after dependency optimization.
