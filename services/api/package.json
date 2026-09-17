@@ -22,6 +22,7 @@
     "@medikiosk/clinical-schema": "*",
     "@medikiosk/evidence-model": "*",
     "@medikiosk/fhir-models": "*",
+    "@medikiosk/interview-engine": "*",
     "@medikiosk/i18n": "*",
     "@medikiosk/safety-rules": "*",
     "@medikiosk/shared-types": "*",

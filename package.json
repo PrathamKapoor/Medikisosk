@@ -13,7 +13,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build:foundation": "npm run build --workspace @medikiosk/shared-types && npm run build --workspace @medikiosk/clinical-schema && npm run build --workspace @medikiosk/auth && npm run build --workspace @medikiosk/i18n && npm run build --workspace @medikiosk/safety-rules && npm run build --workspace @medikiosk/api",
+    "build:foundation": "npm run build --workspace @medikiosk/shared-types && npm run build --workspace @medikiosk/clinical-schema && npm run build --workspace @medikiosk/interview-engine && npm run build --workspace @medikiosk/auth && npm run build --workspace @medikiosk/i18n && npm run build --workspace @medikiosk/safety-rules && npm run build --workspace @medikiosk/api",
     "build": "npm run build:foundation && npm run build --workspace @medikiosk/kiosk",
     "typecheck": "npm run build:foundation && tsc -p apps/kiosk/tsconfig.json --noEmit && tsc -p tsconfig.test.json",
     "lint": "eslint . --max-warnings 0",
