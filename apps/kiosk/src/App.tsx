@@ -21,6 +21,7 @@ import {
 } from "./api";
 import { ConsentForm, Receipt } from "./Consent";
 import { Interview } from "./Interview";
+import GradientWaves from "./components/GradientWaves";
 
 type Screen =
   "welcome" | "identity" | "consent" | "receipt" | "interview" | "result";
@@ -469,6 +470,22 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <GradientWaves
+        horizonColor="#093b78"
+        waveColor="#2759be"
+        crestColor="#a78bfa"
+        speed={0.18}
+        amplitude={1.8}
+        waveScale={0.46}
+        swell={24}
+        turbulence={12}
+        tilt={1.18}
+        fogDepth={19}
+        brightness={0.82}
+        opacity={0.72}
+        grainIntensity={0.025}
+        parallaxStrength={0.18}
+      />
       <a className="skip-link" href="#main">
         {t("registration.skip")}
       </a>
