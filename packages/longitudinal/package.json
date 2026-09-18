@@ -1,0 +1,19 @@
+{
+  "name": "@medikiosk/longitudinal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Longitudinal clinical view: deterministic encounter timeline and what-changed diff. Pure, DB-free, LLM-free.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@medikiosk/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

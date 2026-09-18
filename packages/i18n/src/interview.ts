@@ -51,6 +51,21 @@ const en = {
   "interview.previous_answer": "Your earlier answer: {{answer}}",
   "interview.consent_required_notice":
     "You did not give permission for your symptoms and history to be used, so the clinical interview cannot begin here. Please tell a staff member if you change your mind.",
+  "voice.listen": "Tap and speak your answer",
+  "voice.stop_listening": "Stop listening",
+  "voice.transcribing": "Processing what you said…",
+  "voice.confirm_answer": "I understood this. Is it right?",
+  "voice.confirm_yes": "Yes, that is right",
+  "voice.retry_voice": "I said something else",
+  "voice.type_instead": "Type instead",
+  "voice.no_speech":
+    "I did not hear anything. Please try again, or use the buttons.",
+  "voice.mic_permission":
+    "Microphone access was not allowed. Please use the buttons, or allow the microphone and try again.",
+  "voice.mic_unsupported":
+    "Voice input is not supported on this device. Please use the buttons.",
+  "voice.read_aloud": "Read aloud",
+  "voice.stop_reading": "Stop reading",
 } as const;
 type InterviewCatalogue = Record<keyof typeof en, string>;
 const hi: InterviewCatalogue = {
@@ -95,6 +110,21 @@ const hi: InterviewCatalogue = {
   "interview.previous_answer": "आपका पिछला उत्तर: {{answer}}",
   "interview.consent_required_notice":
     "आपने अपने लक्षणों और इतिहास के उपयोग की अनुमति नहीं दी, इसलिए चिकित्सकीय साक्षात्कार यहाँ शुरू नहीं हो सकता। मन बदलने पर कृपया कर्मचारियों को बताएं।",
+  "voice.listen": "बोलने के लिए दबाएं और अपना उत्तर दें",
+  "voice.stop_listening": "सुनना बंद करें",
+  "voice.transcribing": "आपकी बात संसाधित हो रही है…",
+  "voice.confirm_answer": "मैंने यह समझा। क्या यह सही है?",
+  "voice.confirm_yes": "हां, यह सही है",
+  "voice.retry_voice": "मैंने कुछ और कहा था",
+  "voice.type_instead": "लिखकर बताएं",
+  "voice.no_speech":
+    "मुझे कुछ सुनाई नहीं दिया। कृपया फिर प्रयास करें, या बटन का उपयोग करें।",
+  "voice.mic_permission":
+    "माइक्रोफोन की अनुमति नहीं दी गई। कृपया बटन का उपयोग करें, या माइक्रोफोन की अनुमति देकर फिर प्रयास करें।",
+  "voice.mic_unsupported":
+    "इस डिवाइस पर आवाज इनपुट समर्थित नहीं है। कृपया बटन का उपयोग करें।",
+  "voice.read_aloud": "ज़ोर से पढ़ें",
+  "voice.stop_reading": "पढ़ना बंद करें",
 };
 const mr: InterviewCatalogue = {
   "interview.title": "वैद्यकीय मुलाखत",
@@ -138,6 +168,21 @@ const mr: InterviewCatalogue = {
   "interview.previous_answer": "तुमचे मागील उत्तर: {{answer}}",
   "interview.consent_required_notice":
     "तुम्ही तुमची लक्षणे आणि इतिहास वापरण्याची परवानगी दिली नाही, म्हणून वैद्यकीय मुलाखत येथे सुरू होऊ शकत नाही. मन बदलल्यास कृपया कर्मचाऱ्यांना सांगा.",
+  "voice.listen": "बोलण्यासाठी दाबा आणि तुमचे उत्तर द्या",
+  "voice.stop_listening": "ऐकणे थांबवा",
+  "voice.transcribing": "तुमचे बोलणे प्रक्रिया होत आहे…",
+  "voice.confirm_answer": "मी हे समजलो/समजले. बरोबर आहे का?",
+  "voice.confirm_yes": "होय, ते बरोबर आहे",
+  "voice.retry_voice": "मी काहीतरी वेगळे म्हणालो/म्हणाले",
+  "voice.type_instead": "लिहून सांगा",
+  "voice.no_speech":
+    "मला काही ऐकू आले नाही. कृपया पुन्हा प्रयत्न करा, किंवा बटणे वापरा.",
+  "voice.mic_permission":
+    "मायक्रोफोनची परवानगी दिली नाही. कृपया बटणे वापरा, किंवा मायक्रोफोन परवानगी देऊन पुन्हा प्रयत्न करा.",
+  "voice.mic_unsupported":
+    "या डिव्हाइसवर आवाज इनपुट समर्थित नाही. कृपया बटणे वापरा.",
+  "voice.read_aloud": "मोठ्याने वाचा",
+  "voice.stop_reading": "वाचणे थांबवा",
 };
 export const INTERVIEW_CATALOGUES = {
   "en-IN": en,

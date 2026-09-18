@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@medikiosk/ai": "*",
     "@medikiosk/clinical-schema": "*",
     "@medikiosk/i18n": "*",
     "@medikiosk/shared-types": "*",

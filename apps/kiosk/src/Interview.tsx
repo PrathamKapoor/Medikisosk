@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { CHIEF_COMPLAINT_STARTER_CODES } from "@medikiosk/clinical-schema";
 import {
   clinicalTermLabel,
@@ -15,6 +15,16 @@ import {
   type Session,
   type SubmitResult,
 } from "./api";
+import type { AsrTranscript } from "@medikiosk/ai";
+import {
+  createSpeechSession,
+  needsConfirmation,
+  speak,
+  speechAvailable,
+  stopSpeaking,
+  type MicErrorCode,
+  type SpeechSession,
+} from "./voice";
 
 type Translate = (
   key: string,
@@ -24,6 +34,14 @@ type Translate = (
 type ResponseState =
   "ANSWERED" | "SKIPPED" | "DECLINED" | "UNKNOWN" | "NOT_APPLICABLE";
 
+type MicState = "idle" | "listening" | "transcribing";
+
+/** A recognised voice answer captured immutably, awaiting patient confirmation. */
+interface PendingVoice {
+  text: string;
+  confidence: number | null;
+}
+
 /** Question kinds that take a typed text/duration/number/date answer. */
 const TEXT_KINDS: Record<string, true> = {
   DURATION: true,
@@ -31,6 +49,34 @@ const TEXT_KINDS: Record<string, true> = {
   FREE_TEXT: true,
   DATE: true,
 };
+
+/** Wrap a captured voice answer as the AsrTranscript `needsConfirmation` reads. */
+function voiceAsTranscript(
+  voice: PendingVoice,
+  language: string,
+): AsrTranscript {
+  return {
+    isFinal: true,
+    text: voice.text,
+    language,
+    confidence: voice.confidence,
+    provider: "webspeech",
+    model: "browser-webspeech",
+    durationMs: 0,
+  };
+}
+
+/** Map a mic failure to the i18n key shown as a notice (touch always remains). */
+function voiceErrorKey(code: MicErrorCode): string {
+  switch (code) {
+    case "PERMISSION_DENIED":
+      return "voice.mic_permission";
+    case "NOT_SUPPORTED":
+      return "voice.mic_unsupported";
+    default:
+      return "voice.no_speech";
+  }
+}
 
 /**
  * Patient-facing rendering of the encounter's adaptive interview.
@@ -69,6 +115,14 @@ export function Interview({
   const lastAnswered = useRef<{ key: string; raw: string } | null>(null);
   const pendingComplaint = useRef<string | null>(null);
   const generation = useRef(0);
+  const speechSession = useRef<SpeechSession | null>(null);
+  const textInput = useRef<HTMLInputElement>(null);
+  const [micState, setMicState] = useState<MicState>("idle");
+  const [partial, setPartial] = useState("");
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [pendingVoice, setPendingVoice] = useState<PendingVoice | null>(null);
+  const [reading, setReading] = useState(false);
+  const micSupported = speechAvailable(locale);
 
   const expireSession = () => {
     ++generation.current;
@@ -101,6 +155,8 @@ export function Interview({
   };
 
   const applyNext = (result: NextResult) => {
+    stopMicrophone();
+    resetVoiceState();
     setNext(result);
     const question = result.question;
     setMultiKeys([]);
@@ -112,6 +168,26 @@ export function Interview({
         : null,
     );
     if (question) setTextDraft("");
+  };
+
+  /** Stop any in-flight read-aloud and reset the reading toggle. */
+  const stopReading = () => {
+    if (!reading && !("speechSynthesis" in window)) return;
+    stopSpeaking();
+    setReading(false);
+  };
+
+  /** Halt the active speech session, if any. */
+  const stopMicrophone = () => {
+    speechSession.current?.stop();
+    speechSession.current = null;
+  };
+
+  const resetVoiceState = () => {
+    setMicState("idle");
+    setPartial("");
+    setVoiceError(null);
+    setPendingVoice(null);
   };
 
   const fetchNext = () =>
@@ -134,16 +210,27 @@ export function Interview({
       setEncounter(opened);
     });
 
-  const send = (rawAnswer: string, state?: ResponseState) =>
+  /** Shared submission for touch and voice answers; the raw answer is never
+   * rewritten after capture — a reconciled voice answer is sent verbatim. */
+  const sendRaw = (
+    rawAnswer: string,
+    state: ResponseState | undefined,
+    modality: "VOICE" | "TOUCH",
+    asrConfidence?: number,
+  ) =>
     void spin(async () => {
       if (!encounter || !next?.question) return;
+      stopReading();
       const questionKey = next.question.key;
       try {
         await api.respond({
           encounterId: encounter.encounterId,
           token: session.token,
           questionKey,
-          ...(state ? { state } : { rawAnswer }),
+          state,
+          rawAnswer,
+          modality,
+          ...(asrConfidence === undefined ? {} : { asrConfidence }),
         });
       } catch (cause) {
         if (
@@ -162,6 +249,78 @@ export function Interview({
       lastAnswered.current = { key: questionKey, raw: rawAnswer };
       applyNext(await api.nextQuestion(encounter.encounterId, session.token));
     });
+
+  const send = (rawAnswer: string, state?: ResponseState) =>
+    sendRaw(rawAnswer, state, "TOUCH");
+
+  /** Submit a voice answer exactly as captured (immutable), after confirmation. */
+  const sendVoice = (voice: PendingVoice) => {
+    setPendingVoice(null);
+    sendRaw(voice.text, "ANSWERED", "VOICE", voice.confidence ?? undefined);
+  };
+
+  const startListening = () => {
+    if (busy || !micSupported) return;
+    stopReading();
+    setVoiceError(null);
+    setPartial("");
+    setPendingVoice(null);
+    setMicState("listening");
+    const session = createSpeechSession(locale, {
+      onPartial: (text) => setPartial(text),
+      onFinal: (text) => {
+        stopMicrophone();
+        setMicState("transcribing");
+        const voice: PendingVoice = { text, confidence: null };
+        // Browser recognisers give no confidence → confirmation always
+        // offered. needsConfirmation is still honoured for future providers.
+        if (needsConfirmation(voiceAsTranscript(voice, locale))) {
+          setMicState("idle");
+          setPendingVoice(voice);
+        } else {
+          sendVoice(voice);
+        }
+      },
+      onError: (code) => {
+        stopMicrophone();
+        setMicState("idle");
+        setVoiceError(voiceErrorKey(code));
+      },
+      onEnd: () => {
+        setMicState((current) => (current === "listening" ? "idle" : current));
+      },
+    });
+    speechSession.current = session;
+    session.start();
+  };
+
+  /** Read the prompt (+ option labels) aloud; toggles off on interaction. */
+  const readAloud = () => {
+    if (reading) {
+      stopReading();
+      return;
+    }
+    if (!next?.question) return;
+    const q = next.question;
+    stopSpeaking();
+    const labels = q.options.map((option) =>
+      optionLabel(option, q.kind, locale, t),
+    );
+    speak([t(q.promptKey), ...labels].join(". "), locale, () =>
+      setReading(false),
+    );
+    setReading(true);
+  };
+
+  // Clean up any active speech/TTS when the interview unmounts.
+  useEffect(
+    () => () => {
+      speechSession.current?.stop();
+      speechSession.current = null;
+      stopSpeaking();
+    },
+    [],
+  );
 
   const finishAndSubmit = () =>
     void spin(async () => {
@@ -297,12 +456,95 @@ export function Interview({
         </p>
       ) : null}
       <h2 className="question-prompt">{t(question.promptKey)}</h2>
+      <div className="question-toolbar">
+        <button
+          className={`read-aloud ${reading ? "active" : ""}`}
+          aria-pressed={reading}
+          onClick={readAloud}
+        >
+          <span aria-hidden="true">🔊</span>
+          {t(reading ? "voice.stop_reading" : "voice.read_aloud")}
+        </button>
+        {micSupported &&
+        question.kind !== "INSTRUCTION" &&
+        question.kind !== "DOCUMENT_UPLOAD" ? (
+          <div className="mic-control">
+            {micState === "listening" ? (
+              <button
+                className="mic-button active"
+                disabled={busy}
+                onClick={() => {
+                  stopMicrophone();
+                  resetVoiceState();
+                }}
+              >
+                <span aria-hidden="true">🎤</span>
+                {t("voice.stop_listening")}
+              </button>
+            ) : (
+              <button
+                className="mic-button"
+                disabled={busy || micState !== "idle"}
+                onClick={startListening}
+                aria-label={t("voice.listen")}
+              >
+                <span aria-hidden="true">🎤</span>
+                {t("voice.listen")}
+              </button>
+            )}
+          </div>
+        ) : null}
+      </div>
+      {micState === "listening" && partial ? (
+        <p className="voice-partial" aria-live="polite">
+          {partial}
+        </p>
+      ) : null}
+      {micState === "transcribing" ? (
+        <p className="voice-partial" aria-live="polite">
+          <span aria-hidden="true" className="loading-dot" />
+          {t("voice.transcribing")}
+        </p>
+      ) : null}
+      {voiceError ? (
+        <p className="notice" role="status">
+          {t(voiceError)}
+        </p>
+      ) : null}
+      {pendingVoice ? (
+        <div className="voice-confirm" role="status">
+          <p>{t("voice.confirm_answer")}</p>
+          <p className="voice-transcript">{pendingVoice.text}</p>
+          <div className="actions">
+            <button
+              className="primary"
+              disabled={busy}
+              onClick={() => sendVoice(pendingVoice)}
+            >
+              {t("voice.confirm_yes")}
+            </button>
+            <button disabled={busy} onClick={startListening}>
+              {t("voice.retry_voice")}
+            </button>
+            <button
+              disabled={busy}
+              onClick={() => {
+                resetVoiceState();
+                if (TEXT_KINDS[question.kind]) textInput.current?.focus();
+              }}
+            >
+              {t("voice.type_instead")}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <QuestionBody
         question={question}
         locale={locale}
         t={t}
         busy={busy}
         textDraft={textDraft}
+        inputRef={textInput}
         onTextChange={setTextDraft}
         onAnswer={(value) => void send(value)}
         onOption={(option) => void send(option.key)}
@@ -383,6 +625,7 @@ function QuestionBody({
   t,
   busy,
   textDraft,
+  inputRef,
   onTextChange,
   onAnswer,
   onOption,
@@ -398,6 +641,7 @@ function QuestionBody({
   t: Translate;
   busy: boolean;
   textDraft: string;
+  inputRef?: RefObject<HTMLInputElement>;
   onTextChange: (value: string) => void;
   onAnswer: (value: string) => void;
   onOption: (option: QuestionOption) => void;
@@ -520,6 +764,7 @@ function QuestionBody({
               ? "numeric"
               : "text"
           }
+          ref={inputRef}
           value={textDraft}
           disabled={busy}
           placeholder={t(question.promptKey)}

@@ -17,8 +17,14 @@ export function capabilitiesFor(config: AppConfig) {
           ? { provider: "mock", isMock: true, status: "MOCKED" }
           : { provider: "abha", isMock: false, status: "BLOCKED" },
       llm: planned(config.LLM_PROVIDER),
-      asr: planned(config.ASR_PROVIDER),
-      tts: planned(config.TTS_PROVIDER),
+      asr:
+        config.ASR_PROVIDER === "browser"
+          ? { provider: "browser", isMock: false, status: "IMPLEMENTED" }
+          : planned(config.ASR_PROVIDER),
+      tts:
+        config.TTS_PROVIDER === "browser"
+          ? { provider: "browser", isMock: false, status: "IMPLEMENTED" }
+          : planned(config.TTS_PROVIDER),
       ocr: planned(config.OCR_PROVIDER),
       ner:
         config.NER_PROVIDER === "deterministic"
@@ -31,19 +37,20 @@ export function capabilitiesFor(config: AppConfig) {
       abdm: { provider: "abdm", isMock: false, status: "BLOCKED" },
     },
     features: {
-      voice_enabled: false,
-      tts_enabled: false,
-      document_ai_enabled: false,
-      ayush_enabled: false,
-      abdm_enabled: false,
-      offline_enabled: false,
-      local_llm_enabled: false,
-      research_mode_enabled: false,
+      voice_enabled: config.FEATURE_VOICE_ENABLED,
+      tts_enabled: config.FEATURE_TTS_ENABLED,
+      document_ai_enabled: config.FEATURE_DOCUMENT_AI_ENABLED,
+      ayush_enabled: config.FEATURE_AYUSH_ENABLED,
+      abdm_enabled: config.FEATURE_ABDM_ENABLED,
+      offline_enabled: config.FEATURE_OFFLINE_ENABLED,
+      local_llm_enabled: config.FEATURE_LOCAL_LLM_ENABLED,
+      research_mode_enabled: config.FEATURE_RESEARCH_MODE_ENABLED,
     },
     supportedLocales: ["en-IN", "hi-IN", "mr-IN"],
     limitations: [
       "Identity verification is synthetic demonstration only, not ABHA or real patient matching.",
-      "Clinical interview, voice, document extraction, summaries and external ABDM workflows are not implemented.",
+      "Browser speech recognition (ASR) and TTS are implemented client-side; they depend on the browser, OS speech packs and the microphone, are NOT validated for Indian languages, and always fall back to touch.",
+      "Document extraction, AI summaries and external ABDM workflows are not implemented.",
       "Deterministic concept matching and safety rules exist as domain libraries, not clinical workflow endpoints.",
       "The red-flag rule set is a curated starter set and has not been prospectively clinically validated.",
       "Non-English translations are machine-drafted and require native clinical review.",

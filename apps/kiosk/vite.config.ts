@@ -24,6 +24,9 @@ export default defineConfig(({ mode }) => {
         "@medikiosk/shared-types": fileURLToPath(
           new URL("../../packages/shared-types/src/index.ts", import.meta.url),
         ),
+        "@medikiosk/ai": fileURLToPath(
+          new URL("../../packages/ai/src/index.ts", import.meta.url),
+        ),
       },
     },
     server: {

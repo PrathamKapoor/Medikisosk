@@ -201,7 +201,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): {
       "OCR provider is configured as mock, but no document extraction pipeline is implemented.",
     );
   }
-  warnings.push("ASR, TTS and external ABDM integrations are not implemented.");
+  if (raw.ASR_PROVIDER === "browser" || raw.TTS_PROVIDER === "browser") {
+    warnings.push(
+      "Browser ASR/TTS are client-side, browser-dependent enhancements with touch fallback; Indian-language fidelity is not clinically validated.",
+    );
+  }
+  warnings.push("External ABDM integration is not implemented.");
 
   const config: AppConfig = {
     ...raw,

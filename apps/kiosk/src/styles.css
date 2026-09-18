@@ -688,6 +688,50 @@ dialog::backdrop {
 .result-screen .notice {
   padding: 26px 28px;
 }
+.question-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 18px;
+}
+.read-aloud,
+.mic-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--ink);
+  border-color: var(--border);
+  background: var(--soft);
+}
+.read-aloud.active,
+.mic-button.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+}
+.voice-partial {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: var(--teal-dark);
+  min-height: 1.4em;
+}
+.voice-confirm {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--teal);
+  border-radius: 12px;
+  background: var(--soft);
+  padding: 18px 20px;
+  margin: 0 0 18px;
+}
+.voice-transcript {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 8px 0 16px;
+}
 @media (min-width: 1400px) {
   .workspace {
     grid-template-columns: 320px minmax(0, 1fr);

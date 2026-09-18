@@ -256,13 +256,15 @@ export class KioskApi {
     );
   }
 
-  /** POST /api/v1/encounters/:id/interview/response — record a touch answer. */
+  /** POST /api/v1/encounters/:id/interview/response — record a touch or voice answer. */
   async respond(args: {
     encounterId: string;
     token: string;
     questionKey: string;
     state?: "ANSWERED" | "SKIPPED" | "DECLINED" | "UNKNOWN" | "NOT_APPLICABLE";
     rawAnswer?: string;
+    modality?: "VOICE" | "TOUCH";
+    asrConfidence?: number;
   }): Promise<ResponseResult> {
     return this.request<ResponseResult>(
       `/encounters/${args.encounterId}/interview/response`,
@@ -273,7 +275,10 @@ export class KioskApi {
           questionKey: args.questionKey,
           state: args.state ?? "ANSWERED",
           rawAnswer: args.rawAnswer,
-          modality: "TOUCH",
+          modality: args.modality ?? "TOUCH",
+          ...(args.asrConfidence === undefined
+            ? {}
+            : { asrConfidence: args.asrConfidence }),
         },
       },
     );
