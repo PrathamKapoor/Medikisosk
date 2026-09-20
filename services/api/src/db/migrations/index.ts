@@ -22,6 +22,7 @@ import { MIGRATION_0012_AUDIT } from "./0012-audit";
 import { MIGRATION_0013_ADMIN } from "./0013-admin";
 import { MIGRATION_0014_SESSION_LIFECYCLE } from "./0014-session-lifecycle";
 import { MIGRATION_0015_INTERVIEW_RUNTIME } from "./0015-interview-runtime";
+import { MIGRATION_0016_CONSOLE } from "./0016-console";
 
 export const MIGRATIONS: readonly Migration[] = [
   MIGRATION_0001_IDENTITY,
@@ -39,4 +40,5 @@ export const MIGRATIONS: readonly Migration[] = [
   MIGRATION_0013_ADMIN,
   MIGRATION_0014_SESSION_LIFECYCLE,
   MIGRATION_0015_INTERVIEW_RUNTIME,
+  MIGRATION_0016_CONSOLE,
 ];

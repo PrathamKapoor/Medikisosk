@@ -214,6 +214,25 @@ describe("golden interview journey", () => {
     );
     expect(advisoryKeys).toContain("ESC-CHEST-PAIN-001");
 
+    // The review gate: submission is refused until the patient confirms the assembled record.
+    const prematureKey = randomUUID();
+    const premature = await mutate(
+      `/api/v1/encounters/${encounterId}/submit`,
+      {},
+      prematureKey,
+    );
+    expect(premature.status).toBe(409);
+    expect(
+      (premature.json() as { error?: { code?: string } }).error?.code,
+    ).toBe("PATIENT_CONFIRMATION_REQUIRED");
+
+    const confirm = await mutate(
+      `/api/v1/encounters/${encounterId}/confirm`,
+      {},
+      randomUUID(),
+    );
+    expect(confirm.status).toBe(200);
+
     // Submit.
     const submitKey = randomUUID();
     const submit = await mutate(
@@ -227,6 +246,7 @@ describe("golden interview journey", () => {
       triageLevel: string;
       priority: string;
       queueEntryId: string;
+      tokenNumber: string | null;
     };
     expect(submitted).toMatchObject({
       status: "READY_FOR_REVIEW",
@@ -234,6 +254,7 @@ describe("golden interview journey", () => {
       priority: "EMERGENCY",
     });
     expect(submitted.queueEntryId).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
+    expect(submitted.tokenNumber).toMatch(/^A-\d{3}$/);
 
     // ----- DB assertions -----
     const db = fixture.db;

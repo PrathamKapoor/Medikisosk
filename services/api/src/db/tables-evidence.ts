@@ -143,6 +143,8 @@ export interface QueueEntryRow {
   priority: string;
   status: string;
   reason: string | null;
+  /** Human-showable queue token, e.g. `A-042`. Assigned once at submission. */
+  tokenNumber: string | null;
   ruleIdentifiersJson: string;
   enqueuedAt: string;
   calledAt: string | null;

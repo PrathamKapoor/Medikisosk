@@ -159,6 +159,11 @@ export interface EncounterRow {
   pathwayVersion: string;
   activePathwaysJson: string;
   submittedAt: string | null;
+  /** When the patient explicitly confirmed the assembled record before submission. */
+  patientConfirmedAt: string | null;
+  completedAt: string | null;
+  disposition: string | null;
+  dispositionBy: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

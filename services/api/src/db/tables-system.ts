@@ -167,6 +167,21 @@ export interface EvaluationRunRow {
   completedAt: string | null;
 }
 
+/**
+ * A clinician-authored note for an encounter. Deliberately a separate table from summaries
+ * (system-generated) and questionnaire responses (patient-reported): doctor-written prose must be
+ * visually and structurally distinct from every other origin class (ADR-005).
+ */
+export interface EncounterNoteRow {
+  id: string;
+  tenantId: string;
+  encounterId: string;
+  authorId: string;
+  authorName: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface TenantConfigHistoryRow {
   id: string;
   tenantId: string;
@@ -221,5 +236,6 @@ export interface Database {
   procedures: ProcedureRow;
   timeline_events: TimelineViewRow;
   evaluation_runs: EvaluationRunRow;
+  encounter_notes: EncounterNoteRow;
   tenant_config_history: TenantConfigHistoryRow;
 }

@@ -43,6 +43,7 @@ import type { AppDatabase } from "../db/kysely";
 import type { AppConfig } from "../config/env";
 import type { AppLogger } from "../platform/logger";
 import type { SessionRow } from "../db/schema";
+import type { QueueEntryRow } from "../db/tables-evidence";
 import type { LoadedInterview } from "./state.repo";
 import { sessionFor, assertLocale } from "../kiosk/session.repo";
 import { requireConsent } from "../consent/consent.service";
@@ -829,6 +830,11 @@ export class InterviewService {
       },
       now,
     );
+    if (!loaded.encounter.patientConfirmedAt)
+      throw new MediKioskError(
+        "PATIENT_CONFIRMATION_REQUIRED",
+        "The patient must review and confirm the information before it is submitted.",
+      );
 
     const recorded = now.toISOString();
     const pathways = selectActivePathways(loaded.input);
@@ -840,7 +846,7 @@ export class InterviewService {
     );
     const completion = selectNextQuestion(loaded.input, pathways).completion;
 
-    const queueEntryId = await this.upsertQueueEntry(
+    const queueEntry = await this.upsertQueueEntry(
       tx,
       loaded,
       triage,
@@ -892,7 +898,14 @@ export class InterviewService {
       actorId: principal.sessionId,
       action: "TRIAGE_TRIGGERED",
       resourceId: encounterId,
-      detail: { level: triage.level, queueEntryId: queueEntryId.slice(0, 12) },
+      detail: { level: triage.level, queueEntryId: queueEntry.id.slice(0, 12) },
+    });
+    await this.audit(tx, request, "KIOSK", {
+      tenantId: principal.tenantId,
+      actorId: principal.sessionId,
+      action: "QUEUE_TOKEN_ASSIGNED",
+      resourceId: encounterId,
+      detail: { token: queueEntry.tokenNumber ?? "" },
     });
 
     return {
@@ -901,7 +914,10 @@ export class InterviewService {
         status: "READY_FOR_REVIEW",
         triageLevel: triage.level,
         priority: triage.priority,
-        queueEntryId,
+        queueEntryId: queueEntry.id,
+        tokenNumber: queueEntry.tokenNumber,
+        queuePosition:
+          queueEntry.priority === "EMERGENCY" ? 1 : undefined,
         incomplete: completion.status !== "COMPLETE",
         outstandingRequired: completion.outstandingRequired,
       },
@@ -917,7 +933,7 @@ export class InterviewService {
       hits: readonly { ruleIdentifier: string; description: string }[];
     },
     recorded: string,
-  ): Promise<string> {
+  ): Promise<QueueEntryRow> {
     const existing = await tx
       .selectFrom("queue_entries")
       .selectAll()
@@ -938,10 +954,20 @@ export class InterviewService {
         })
         .where("id", "=", existing.id)
         .execute();
-      return existing.id;
+      return existing;
     }
     const id = ulid();
-    await tx
+    // Human-showable token: a per-tenant sequence formatted as `A-042`. Assigned once; the number
+    // is stable for the encounter's queue life and is what the patient is told to watch for.
+    const count = await tx
+      .selectFrom("queue_entries")
+      .select((eb) => eb.fn.countAll<number>().as("count"))
+      .where("tenantId", "=", loaded.encounter.tenantId)
+      .executeTakeFirst();
+    const tokenNumber = `A-${String(
+      (Number(count?.count ?? 0) % 999) + 1,
+    ).padStart(3, "0")}`;
+    const inserted = await tx
       .insertInto("queue_entries")
       .values({
         id,
@@ -951,14 +977,16 @@ export class InterviewService {
         priority: triage.priority,
         status: "WAITING",
         reason,
+        tokenNumber,
         ruleIdentifiersJson: JSON.stringify(identifiers),
         enqueuedAt: recorded,
         calledAt: null,
         completedAt: null,
         updatedAt: recorded,
       })
-      .execute();
-    return id;
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    return inserted;
   }
 
   private activeQuestionMap(

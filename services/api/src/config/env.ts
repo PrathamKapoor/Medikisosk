@@ -33,6 +33,11 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("./.medikiosk-data/medikiosk.sqlite"),
+  MEDIKIOSK_UPLOAD_DIR: z
+    .string()
+    .min(1)
+    .default("./.medikiosk-data/uploads"),
+  DOCUMENT_MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(50).default(10),
   DATABASE_URL: z.string().min(1).optional(),
 
   MEDIKIOSK_JWT_SECRET: z.string().min(1),
