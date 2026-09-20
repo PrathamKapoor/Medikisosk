@@ -10,7 +10,9 @@ import type { AppDatabase } from "./kysely";
 import {
   DEMO_FIXTURES,
   seedDemoEncounters,
+  seedDemoInterviewSessions,
   seedDemoPatient,
+  seedDemoPreviousVisitTrail,
 } from "./seed-demo-patient";
 import { seedDemoPriorFacts } from "./seed-demo-prior";
 import { seedDemoCurrentVisit, type DemoCaseIds } from "./seed-demo-current";
@@ -22,8 +24,10 @@ export async function seedDemoCase(
 ): Promise<DemoCaseIds> {
   await seedDemoPatient(db, tenantId);
   await seedDemoEncounters(db, tenantId);
+  await seedDemoInterviewSessions(db, tenantId);
   await seedDemoPriorFacts(db, tenantId);
   await seedDemoCurrentVisit(db, tenantId);
+  await seedDemoPreviousVisitTrail(db, tenantId);
 
   return {
     tenantId,

@@ -33,6 +33,12 @@ import { IntakeService } from "./intake/intake.service";
 import { registerIntakeRoutes } from "./intake/intake.routes";
 import { DocumentService } from "./documents/document.service";
 import { registerDocumentRoutes } from "./documents/document.routes";
+import { ClinicalService } from "./clinical/clinical.service";
+import { registerClinicalRoutes } from "./clinical/clinical.routes";
+import { SummaryService } from "./summary/summary.service";
+import { registerSummaryRoutes } from "./summary/summary.routes";
+import { AdminService } from "./admin/admin.service";
+import { registerAdminRoutes } from "./admin/admin.routes";
 
 export interface BuildAppDeps {
   readonly config: AppConfig;
@@ -123,6 +129,12 @@ export async function buildApp(deps: BuildAppDeps): Promise<FastifyInstance> {
   });
   const documentService = new DocumentService({ db, config, logger, now });
   await registerDocumentRoutes(app, documentService);
+  const clinicalService = new ClinicalService({ db, config, logger, now });
+  await registerClinicalRoutes(app, clinicalService);
+  const summaryService = new SummaryService({ db, config, logger, now });
+  await registerSummaryRoutes(app, summaryService);
+  const adminService = new AdminService({ db, config, logger, now });
+  await registerAdminRoutes(app, adminService);
   let cleanupTimer: NodeJS.Timeout | undefined;
   let cleanupRunning: Promise<void> | undefined;
   app.addHook("onReady", async () => {

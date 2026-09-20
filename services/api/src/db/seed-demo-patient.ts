@@ -79,8 +79,13 @@ export async function seedDemoEncounters(
   const seeds = [
     {
       id: DEMO_FIXTURES.previousEncounterId,
-      status: "READY_FOR_REVIEW",
+      // A finished past visit: the longitudinal baseline the demo compares against.
+      status: "COMPLETED",
       createdAt: "2026-03-04T09:00:00.000Z",
+      submittedAt: "2026-03-04T09:25:00.000Z",
+      patientConfirmedAt: "2026-03-04T09:24:00.000Z",
+      completedAt: "2026-03-04T10:05:00.000Z",
+      disposition: "FOLLOW_UP_OPD",
       complaint: ["MK-SYM-024"],
       chief: "weight loss and tiredness",
     },
@@ -88,6 +93,10 @@ export async function seedDemoEncounters(
       id: DEMO_FIXTURES.currentEncounterId,
       status: "IN_PROGRESS",
       createdAt: now,
+      submittedAt: null,
+      patientConfirmedAt: null,
+      completedAt: null,
+      disposition: null,
       complaint: ["MK-SYM-001"],
       chief: "seene mein dard kal se",
     },
@@ -118,7 +127,11 @@ export async function seedDemoEncounters(
         questionnaireVersion: "1.0.0",
         pathwayVersion: "1.0.0",
         activePathwaysJson: json(["PATH-CHEST-PAIN", "PATH-HISTORY-GENERAL"]),
-        submittedAt: seed.status === "READY_FOR_REVIEW" ? seed.createdAt : null,
+        submittedAt: seed.submittedAt,
+        patientConfirmedAt: seed.patientConfirmedAt,
+        completedAt: seed.completedAt,
+        disposition: seed.disposition,
+        dispositionBy: null,
         createdAt: seed.createdAt,
         updatedAt: seed.createdAt,
         deletedAt: null,
@@ -127,4 +140,124 @@ export async function seedDemoEncounters(
     created += 1;
   }
   return { created };
+}
+
+/**
+ * Anchor the demo encounters in the interview runtime: every real encounter carries an
+ * interview session row, so the seeded history behaves identically under the case view,
+ * summary and compare endpoints.
+ */
+export async function seedDemoInterviewSessions(
+  db: AppDatabase,
+  tenantId: string,
+): Promise<{ created: number }> {
+  const sessions = [
+    {
+      encounterId: DEMO_FIXTURES.previousEncounterId,
+      status: "COMPLETED",
+      startedAt: "2026-03-04T09:01:00.000Z",
+      completedAt: "2026-03-04T09:24:00.000Z",
+    },
+    {
+      encounterId: DEMO_FIXTURES.currentEncounterId,
+      status: "ACTIVE",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    },
+  ];
+  let created = 0;
+  for (const session of sessions) {
+    const present = await db
+      .selectFrom("interview_sessions")
+      .selectAll()
+      .where("encounterId", "=", session.encounterId)
+      .where("tenantId", "=", tenantId)
+      .executeTakeFirst();
+    if (present) continue;
+    const at = session.startedAt;
+    await db
+      .insertInto("interview_sessions")
+      .values({
+        id: ulid(),
+        tenantId,
+        encounterId: session.encounterId,
+        patientId: DEMO_FIXTURES.patientId,
+        kioskSessionId: "seeded-history",
+        status: session.status,
+        pathwayKeysJson: json(["PATH-CHEST-PAIN", "PATH-HISTORY-GENERAL"]),
+        pathwayVersion: "1.0.0",
+        runtimeVersion: "1.0.0",
+        startedAt: at,
+        completedAt: session.completedAt,
+        createdAt: at,
+        updatedAt: at,
+        deletedAt: null,
+      })
+      .execute();
+    created += 1;
+  }
+  return { created };
+}
+
+/** Timeline + queue rows for the finished previous visit, so the console shows a real story. */
+export async function seedDemoPreviousVisitTrail(
+  db: AppDatabase,
+  tenantId: string,
+): Promise<{ created: boolean }> {
+  const marker = await db
+    .selectFrom("timeline_events")
+    .selectAll()
+    .where("encounterId", "=", DEMO_FIXTURES.previousEncounterId)
+    .where("eventType", "=", "ENCOUNTER_COMPLETED")
+    .executeTakeFirst();
+  if (marker) return { created: false };
+
+  const events = [
+    {
+      eventType: "ENCOUNTER_SUBMITTED",
+      eventAt: "2026-03-04T09:25:00.000Z",
+      headline: "Encounter submitted for review",
+    },
+    {
+      eventType: "ENCOUNTER_COMPLETED",
+      eventAt: "2026-03-04T10:05:00.000Z",
+      headline: "Encounter completed",
+    },
+  ];
+  for (const event of events) {
+    await db
+      .insertInto("timeline_events")
+      .values({
+        id: ulid(),
+        tenantId,
+        patientId: DEMO_FIXTURES.patientId,
+        encounterId: DEMO_FIXTURES.previousEncounterId,
+        eventType: event.eventType,
+        eventAt: event.eventAt,
+        headline: event.headline,
+        detailJson: json({}),
+        evidenceIdsJson: json([]),
+        createdAt: event.eventAt,
+      })
+      .execute();
+  }
+  await db
+    .insertInto("queue_entries")
+    .values({
+      id: ulid(),
+      tenantId,
+      encounterId: DEMO_FIXTURES.previousEncounterId,
+      patientId: DEMO_FIXTURES.patientId,
+      priority: "ROUTINE",
+      status: "COMPLETED",
+      reason: "No rule fired",
+      tokenNumber: "A-001",
+      ruleIdentifiersJson: json([]),
+      enqueuedAt: "2026-03-04T09:25:00.000Z",
+      calledAt: "2026-03-04T09:40:00.000Z",
+      completedAt: "2026-03-04T10:05:00.000Z",
+      updatedAt: "2026-03-04T10:05:00.000Z",
+    })
+    .execute();
+  return { created: true };
 }
