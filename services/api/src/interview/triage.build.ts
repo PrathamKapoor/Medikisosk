@@ -79,8 +79,34 @@ export function buildRuleEvaluationInput(
         negated: s.certainty === "NEGATED",
       };
     }),
-    vitalFacts: [],
-    labFacts: [],
+    vitalFacts: loaded.vitals
+      .map((v) => {
+        const componentCode =
+          v.componentCode === "SYSTOLIC"
+            ? ("SYSTOLIC" as const)
+            : v.componentCode === "DIASTOLIC"
+              ? ("DIASTOLIC" as const)
+              : undefined;
+        return {
+          code: v.conceptCode,
+          value: v.value,
+          ...(componentCode ? { componentCode } : {}),
+          ...(v.implausible === 1 ? { implausible: true } : {}),
+        };
+      })
+      // An implausible reading is never consumed silently as a clinical input (ADR-009).
+      .filter((v) => v.implausible !== true),
+    labFacts: loaded.labResults.map((l) => ({
+      testCode: l.testCode,
+      flag: l.flag as
+        | "NORMAL"
+        | "HIGH"
+        | "LOW"
+        | "CRITICAL_HIGH"
+        | "CRITICAL_LOW"
+        | "UNKNOWN",
+      value: l.value,
+    })),
     conditionCodes: loaded.input.conditionCodes,
     medicationCodes: loaded.input.medicationCodes,
     allergyCodes: loaded.allergies
@@ -102,7 +128,7 @@ export function buildRuleEvaluationInput(
       activePathways,
     ),
     answeredYesQuestionKeys: answeredYes(loaded),
-    documentCount: 0,
+    documentCount: loaded.documents.length,
   };
 }
 

@@ -102,6 +102,15 @@ describe("SHA-256 helper", () => {
     // "abc" → "YWJj"
     expect(Array.from(base64ToBytes("YWJj"))).toEqual([0x61, 0x62, 0x63]);
   });
+  it("decodes padded base64 without appending garbage bytes", () => {
+    // "ab" → "YWI=" and "a" → "YQ==": a final quantum of 3 or 2 characters encodes exactly
+    // 2 or 1 bytes. The old decoder emitted an extra zero byte here, which broke
+    // hash-addressed mock-OCR lookups for any content whose length was not a multiple of 3.
+    expect(Array.from(base64ToBytes("YWI="))).toEqual([0x61, 0x62]);
+    expect(Array.from(base64ToBytes("YQ=="))).toEqual([0x61]);
+    expect(Array.from(base64ToBytes("YWI"))).toEqual([0x61, 0x62]);
+    expect(sha256Hex(base64ToBytes("YWI="))).toBe(sha256Hex(new TextEncoder().encode("ab")));
+  });
 });
 
 describe("DeterministicMockOcrProvider", () => {

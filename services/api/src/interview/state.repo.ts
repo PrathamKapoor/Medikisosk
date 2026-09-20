@@ -32,8 +32,9 @@ import type {
   MedicationRow,
   QuestionnaireResponseRow,
   SymptomRow,
+  VitalRow,
 } from "../db/tables-clinical";
-import type { TriageAssessmentRow } from "../db/tables-evidence";
+import type { TriageAssessmentRow, LabResultRow, DocumentRow } from "../db/tables-evidence";
 
 const PATIENT_REPORTED = "PATIENT_REPORTED";
 const UNVERIFIED = "UNVERIFIED";
@@ -52,6 +53,9 @@ export interface LoadedInterview {
   readonly conditions: readonly HistoryRow[];
   readonly medications: readonly MedicationRow[];
   readonly allergies: readonly AllergyRecordRow[];
+  readonly vitals: readonly VitalRow[];
+  readonly labResults: readonly LabResultRow[];
+  readonly documents: readonly DocumentRow[];
   readonly latestTriage: TriageAssessmentRow | undefined;
 }
 
@@ -143,7 +147,7 @@ export async function loadInterview(
     .where("deletedAt", "is", null)
     .executeTakeFirstOrThrow();
 
-  const [responses, symptoms, conditions, medications, allergies] =
+  const [responses, symptoms, conditions, medications, allergies, vitals, labResults, documents] =
     await Promise.all([
       db
         .selectFrom("questionnaire_responses")
@@ -176,6 +180,26 @@ export async function loadInterview(
         .selectAll()
         .where("encounterId", "=", encounterId)
         .where("tenantId", "=", tenantId)
+        .execute(),
+      db
+        .selectFrom("vitals")
+        .selectAll()
+        .where("encounterId", "=", encounterId)
+        .where("tenantId", "=", tenantId)
+        .orderBy("measuredAt", "desc")
+        .execute(),
+      db
+        .selectFrom("lab_results")
+        .selectAll()
+        .where("encounterId", "=", encounterId)
+        .where("tenantId", "=", tenantId)
+        .execute(),
+      db
+        .selectFrom("documents")
+        .selectAll()
+        .where("encounterId", "=", encounterId)
+        .where("tenantId", "=", tenantId)
+        .where("deletedAt", "is", null)
         .execute(),
     ]);
 
@@ -219,10 +243,14 @@ export async function loadInterview(
       .filter((m) => m.conceptCode)
       .map((m) => m.conceptCode as string),
     allergyCategories: allergyCategoryOf(allergies),
-    vitals: {},
-    labFlaggedHigh: [],
-    labFlaggedLow: [],
-    documentCount: 0,
+    vitals: vitalsFactsOf(vitals),
+    labFlaggedHigh: labResults
+      .filter((l) => l.flag === "HIGH" || l.flag === "CRITICAL_HIGH")
+      .map((l) => l.testCode),
+    labFlaggedLow: labResults
+      .filter((l) => l.flag === "LOW" || l.flag === "CRITICAL_LOW")
+      .map((l) => l.testCode),
+    documentCount: documents.length,
   };
 
   const latestTriage = await db
@@ -244,8 +272,28 @@ export async function loadInterview(
     conditions,
     medications,
     allergies,
+    vitals,
+    labResults,
+    documents,
     latestTriage,
   };
+}
+
+/**
+ * Map vital rows into the engine's `vitals` map (code → latest value). Blood pressure is keyed by
+ * component so systolic and diastolic stay separate; other vitals use their plain code. Rows are
+ * ordered measuredAt desc, so the first row per key is the most recent reading.
+ */
+function vitalsFactsOf(rows: readonly VitalRow[]): InterviewInput["vitals"] {
+  const latest = new Map<string, number>();
+  for (const row of rows) {
+    const key =
+      row.conceptCode === "MK-VIT-001" && row.componentCode
+        ? `MK-VIT-001.${row.componentCode}`
+        : row.conceptCode;
+    if (!latest.has(key)) latest.set(key, row.value);
+  }
+  return Object.fromEntries(latest);
 }
 
 /** Create the encounter and its interview session row atomically. */

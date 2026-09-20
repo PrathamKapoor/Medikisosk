@@ -150,14 +150,19 @@ export function base64ToBytes(b64: string): Uint8Array {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   const out: number[] = [];
   for (let i = 0; i < clean.length; i += 4) {
+    // A stripped final quantum holds 2, 3 or 4 characters encoding 1, 2 or 3 bytes
+    // respectively; emitting a byte per present character (the old code did) appends a
+    // garbage byte whenever the input needed padding, which silently breaks hash-addressed
+    // lookups for any content whose length is not a multiple of three.
+    const remaining = clean.length - i;
     const c0 = table.indexOf(clean[i]!);
-    const c1 = clean[i + 1] !== undefined ? table.indexOf(clean[i + 1]!) : 0;
-    const c2 = clean[i + 2] !== undefined ? table.indexOf(clean[i + 2]!) : 0;
-    const c3 = clean[i + 3] !== undefined ? table.indexOf(clean[i + 3]!) : 0;
+    const c1 = remaining > 1 ? table.indexOf(clean[i + 1]!) : 0;
+    const c2 = remaining > 2 ? table.indexOf(clean[i + 2]!) : 0;
+    const c3 = remaining > 3 ? table.indexOf(clean[i + 3]!) : 0;
     const n = (c0 << 18) | (c1 << 12) | (c2 << 6) | c3;
     out.push((n >> 16) & 0xff);
-    if (clean[i + 1] !== undefined) out.push((n >> 8) & 0xff);
-    if (clean[i + 2] !== undefined) out.push(n & 0xff);
+    if (remaining > 2) out.push((n >> 8) & 0xff);
+    if (remaining > 3) out.push(n & 0xff);
   }
   return new Uint8Array(out);
 }
