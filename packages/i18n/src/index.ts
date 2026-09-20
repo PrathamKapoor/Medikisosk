@@ -12,3 +12,4 @@ export * from "./clinical-terms";
 export * from "./verify";
 export * from "./registration";
 export * from "./interview";
+export * from "./details";

@@ -48,6 +48,10 @@ export default function GradientWaves({
   useEffect(() => {
     const el = ref.current;
     if (!el || !window.WebGL2RenderingContext) return undefined;
+    // Reduced motion: render one static frame and never animate.
+    const reducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const renderer = new Renderer({
       webgl: 2,
       alpha: true,
@@ -106,15 +110,36 @@ export default function GradientWaves({
     };
     canvas.addEventListener("pointermove", move);
     let frame = 0;
+    let stopVisibility;
     const start = performance.now();
-    const draw = (now) => {
+    const render = (now) => {
       uniforms.iTime.value = (now - start) / 1000;
       renderer.render({ scene: mesh });
+    };
+    const draw = (now) => {
+      render(now);
       frame = requestAnimationFrame(draw);
     };
-    frame = requestAnimationFrame(draw);
+    if (reducedMotion) {
+      // One frame only: the backdrop stays readable and still.
+      render(start);
+    } else {
+      frame = requestAnimationFrame(draw);
+      const onVisibility = () => {
+        if (document.hidden) {
+          cancelAnimationFrame(frame);
+          frame = 0;
+        } else if (!frame) {
+          frame = requestAnimationFrame(draw);
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibility);
+      stopVisibility = () =>
+        document.removeEventListener("visibilitychange", onVisibility);
+    }
     return () => {
       cancelAnimationFrame(frame);
+      if (stopVisibility) stopVisibility();
       ro.disconnect();
       canvas.removeEventListener("pointermove", move);
       canvas.remove();

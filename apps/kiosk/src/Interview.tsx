@@ -13,7 +13,6 @@ import {
   type Question,
   type QuestionOption,
   type Session,
-  type SubmitResult,
 } from "./api";
 import type { AsrTranscript } from "@medikiosk/ai";
 import {
@@ -95,7 +94,7 @@ export function Interview({
   t,
   api,
   onExpired,
-  onSubmitted,
+  onComplete,
 }: {
   session: Session;
   patientId: string;
@@ -103,7 +102,7 @@ export function Interview({
   t: Translate;
   api: KioskApi;
   onExpired: () => void;
-  onSubmitted: (result: SubmitResult) => void;
+  onComplete: (encounterId: string) => void;
 }) {
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [next, setNext] = useState<NextResult | null>(null);
@@ -322,12 +321,11 @@ export function Interview({
     [],
   );
 
-  const finishAndSubmit = () =>
+  const finishAndContinue = () =>
     void spin(async () => {
       if (!encounter) return;
-      onSubmitted(
-        await api.submitEncounter(encounter.encounterId, session.token),
-      );
+      stopReading();
+      onComplete(encounter.encounterId);
     });
 
   if (!encounter) {
@@ -387,9 +385,9 @@ export function Interview({
             <button
               className="primary"
               disabled={busy}
-              onClick={finishAndSubmit}
+              onClick={finishAndContinue}
             >
-              {t("interview.submit")}
+              {t("details.continue_to_review")}
             </button>
           </div>
         )}
@@ -675,7 +673,7 @@ function QuestionBody({
   if (question.kind === "DOCUMENT_UPLOAD")
     return (
       <div className="notice">
-        <p>{t("interview.unsupported_document")}</p>
+        <p>{t("details.docs_lead")}</p>
         <div className="secondary-actions">
           <button disabled={busy} onClick={onSkip}>
             {t("interview.skip")}

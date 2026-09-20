@@ -21,16 +21,28 @@ import {
 } from "./api";
 import { ConsentForm, Receipt } from "./Consent";
 import { Interview } from "./Interview";
+import { HealthDetails } from "./Details";
+import { ReviewScreen } from "./Review";
 import GradientWaves from "./components/GradientWaves";
+import { idlePolicy } from "./session-policy";
 
 type Screen =
-  "welcome" | "identity" | "consent" | "receipt" | "interview" | "result";
+  | "welcome"
+  | "identity"
+  | "consent"
+  | "receipt"
+  | "interview"
+  | "details"
+  | "review"
+  | "result";
 const stages: Screen[] = [
   "welcome",
   "identity",
   "consent",
   "receipt",
   "interview",
+  "details",
+  "review",
 ];
 const titleKeys: Record<Screen, string> = {
   welcome: "kiosk.welcome.title",
@@ -38,6 +50,8 @@ const titleKeys: Record<Screen, string> = {
   consent: "registration.consent",
   receipt: "registration.receipt",
   interview: "interview.title",
+  details: "details.title",
+  review: "details.review_title",
   result: "interview.submitted",
 };
 
@@ -46,7 +60,7 @@ type ResultTranslate = (
   params?: Record<string, string | number>,
 ) => string;
 
-/** Post-submit triage outcome rendered in patient-safe wording (never a diagnosis). */
+/** Post-submit queue status rendered in patient-safe wording (never a diagnosis). */
 function ResultScreen({
   result,
   t,
@@ -65,26 +79,26 @@ function ResultScreen({
         : "interview.green";
   return (
     <div className="result-screen">
+      <h2>{t("details.token_title")}</h2>
+      {result.tokenNumber ? (
+        <div className="token-card" role="status">
+          <span className="token-label">{t("details.token_label")}</span>
+          <span className="token-number">{result.tokenNumber}</span>
+          <span className="token-meta">
+            {t("details.token_priority")}: {result.priority}
+          </span>
+          <span className="token-meta">{t("details.token_waiting")}</span>
+        </div>
+      ) : null}
       <div className={`notice ${red ? "priority" : "success"}`} role="status">
-        <h2>
-          {red ? t("interview.review_required") : t("interview.submitted")}
-        </h2>
         <p>{t(messageKey)}</p>
-        {red ? (
-          <button className="primary" onClick={onFinish}>
-            {t("triage.red.action")}
-          </button>
-        ) : null}
+        <p className="caption">{t("details.token_instructions")}</p>
+        {red ? <p className="caption">{t("details.token_urgent")}</p> : null}
       </div>
       <div className="actions">
-        {!red ? (
-          <button className="primary" onClick={onFinish}>
-            {t("interview.finish")}
-          </button>
-        ) : null}
-        {red ? (
-          <button onClick={onFinish}>{t("interview.finish")}</button>
-        ) : null}
+        <button className="primary" onClick={onFinish}>
+          {t("interview.finish")}
+        </button>
       </div>
     </div>
   );
@@ -153,6 +167,7 @@ export default function App() {
   const [otp, setOtp] = useState("");
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [receipt, setReceipt] = useState<ConsentRecord | null>(null);
+  const [encounterId, setEncounterId] = useState<string | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +175,7 @@ export default function App() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [now, setNow] = useState(Date.now());
   const [warning, setWarning] = useState(false);
+  const policy = useRef(idlePolicy()).current;
   const api = useRef(new KioskApi());
   const generation = useRef(0);
   const locked = useRef(false);
@@ -202,6 +218,7 @@ export default function App() {
     setChallenge(null);
     setOtp("");
     setReceipt(null);
+    setEncounterId(null);
     setSubmitResult(null);
     setDecisions([]);
     setScreen("welcome");
@@ -230,17 +247,18 @@ export default function App() {
     if (!session) return;
     const markActivity = () => {
       // Once the warning opens, only an explicit response resets inactivity.
-      if (Date.now() - activity.current < 240000) activity.current = Date.now();
+      if (Date.now() - activity.current < policy.warningMs)
+        activity.current = Date.now();
     };
     const tick = () => {
       const current = Date.now();
       setNow(current);
       if (
         current >= Date.parse(session.expiresAt) ||
-        current - activity.current >= 300000
+        current - activity.current >= policy.resetMs
       )
         clearPatient("registration.expired");
-      else setWarning(current - activity.current >= 240000);
+      else setWarning(current - activity.current >= policy.warningMs);
     };
     const timer = window.setInterval(tick, 1000);
     window.addEventListener("pointerdown", markActivity, { passive: true });
@@ -252,7 +270,7 @@ export default function App() {
       window.removeEventListener("keydown", markActivity);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [session]);
+  }, [session, policy]);
 
   useEffect(() => {
     if (warning) dialog.current?.showModal();
@@ -792,6 +810,30 @@ export default function App() {
                 t={t}
                 api={api.current}
                 onExpired={() => clearPatient("registration.expired")}
+                onComplete={(id) => {
+                  setEncounterId(id);
+                  setScreen("details");
+                }}
+              />
+            ) : null}
+            {screen === "details" && session && encounterId ? (
+              <HealthDetails
+                encounterId={encounterId}
+                token={session.token}
+                locale={locale}
+                t={t}
+                api={api.current}
+                onContinue={() => setScreen("review")}
+              />
+            ) : null}
+            {screen === "review" && session && encounterId ? (
+              <ReviewScreen
+                encounterId={encounterId}
+                token={session.token}
+                locale={locale}
+                t={t}
+                api={api.current}
+                onBack={() => setScreen("details")}
                 onSubmitted={(result) => {
                   setSubmitResult(result);
                   setScreen("result");
@@ -823,7 +865,7 @@ export default function App() {
           {t("registration.idle_body", {
             seconds: Math.max(
               0,
-              Math.ceil((300000 - (now - activity.current)) / 1000),
+              Math.ceil((policy.resetMs - (now - activity.current)) / 1000),
             ),
           })}
         </p>
