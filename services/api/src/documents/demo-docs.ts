@@ -66,6 +66,17 @@ Patient prefers morning appointments. Reviews medication list at each visit.
 
 Dr. S. Rao`;
 
+const SUNITA_LAB_DEMO = `CITY CARE DIAGNOSTICS - LABORATORY REPORT
+Date: 2026-09-16
+Patient: Sunita Deshmukh
+Specimen: Blood
+
+HbA1c: 5.9 %
+Fasting plasma glucose: 141 mg/dL
+
+Reported by: Dr. A. Sharma
+Pathologist: MMC-LAB-2210`;
+
 export interface DemoDocumentFixture {
   readonly name: string;
   readonly documentType:
@@ -108,6 +119,7 @@ export const DEMO_DOCUMENTS: readonly DemoDocumentFixture[] = [
     MEDICAL_CERTIFICATE_DEMO,
   ),
   fixture("general-note-demo.txt", "OTHER", OTHER_DEMO),
+  fixture("lab-report-sunita-demo.txt", "LAB_REPORT", SUNITA_LAB_DEMO),
 ];
 
 export function demoDocumentByName(

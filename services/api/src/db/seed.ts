@@ -168,6 +168,59 @@ export async function seedBase(
     kiosks.push({ name: created.name, created: true });
   }
 
+  // The wider demo fleet: one idle kiosk (no recent session activity → Offline) and one
+  // flagged for maintenance, so the admin fleet table shows every state honestly.
+  const fleetExtras = [
+    {
+      name: "OPD Block B Kiosk 1",
+      location: "OPD Block B, first floor",
+      status: "ACTIVE",
+      lastSeenAt: null as string | null,
+    },
+    {
+      name: "Emergency Kiosk 1",
+      location: "Emergency entrance",
+      status: "MAINTENANCE",
+      lastSeenAt: "2026-09-10T08:00:00.000Z",
+    },
+  ];
+  for (const extra of fleetExtras) {
+    const present = await db
+      .selectFrom("kiosks")
+      .selectAll()
+      .where("tenantId", "=", tenant.id)
+      .where("name", "=", extra.name)
+      .executeTakeFirst();
+    if (present) {
+      kiosks.push({ name: present.name, created: false });
+      continue;
+    }
+    const created = await db
+      .insertInto("kiosks")
+      .values({
+        id: ulid(),
+        tenantId: tenant.id,
+        name: extra.name,
+        location: extra.location,
+        deviceTokenHash: sha256Hex(DEMO_KIOSK_DEVICE_TOKEN),
+        status: extra.status,
+        softwareVersion: "0.1.0",
+        hardwareJson: JSON.stringify({
+          microphone: "OK",
+          camera: "OK",
+          scanner: "NOT_FITTED",
+          printer: "OK",
+        }),
+        lastSeenAt: extra.lastSeenAt,
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    kiosks.push({ name: created.name, created: true });
+  }
+
   const consentVersions: {
     version: string;
     locale: string;

@@ -183,8 +183,8 @@ describe("document pipeline", () => {
     expect(listed.status).toBe(200);
     const documents = listed.json() as { name: string; documentType: string }[];
     expect(documents.map((d) => d.name)).toContain("prescription-demo.txt");
-    expect(documents.map((d) => d.name)).toContain("lab-report-demo.txt");
-    expect(documents.length).toBe(5);
+    expect(documents.map((d) => d.name)).toContain("lab-report-sunita-demo.txt");
+    expect(documents.length).toBe(6);
   });
 
   it("uploads a demo prescription, extracts medication entities, and confirms medication facts", async () => {

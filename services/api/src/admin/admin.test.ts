@@ -55,13 +55,17 @@ describe("administration", () => {
     const fleet = await call("GET", "/api/v1/admin/kiosks");
     expect(fleet.status).toBe(200);
     const kiosks = (
-      fleet.json() as { kiosks: { id: string; status: string }[] }
+      fleet.json() as { kiosks: { id: string; name: string; status: string }[] }
     ).kiosks;
-    expect(kiosks.length).toBeGreaterThanOrEqual(1);
-    // Session activity just happened, so the demo kiosk reads Online.
-    expect(kiosks[0]!.status).toBe("Online");
+    expect(kiosks.length).toBeGreaterThanOrEqual(3);
+    const statuses = new Map(kiosks.map((k) => [k.name, k.status]));
+    // Session activity just happened, so the Block A kiosk reads Online; the demo fleet
+    // shows every state.
+    expect(statuses.get("OPD Block A Kiosk 2")).toBe("Online");
+    expect(statuses.get("OPD Block B Kiosk 1")).toBe("Offline");
+    expect(statuses.get("Emergency Kiosk 1")).toBe("Maintenance");
 
-    const kioskId = kiosks[0]!.id;
+    const kioskId = kiosks.find((k) => k.name === "OPD Block A Kiosk 2")!.id;
     const heartbeat = await opened.fixture.app.inject({
       method: "POST",
       url: `/api/v1/admin/kiosks/${kioskId}/heartbeat`,

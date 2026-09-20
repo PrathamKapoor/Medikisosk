@@ -16,6 +16,7 @@ import {
 } from "./seed-demo-patient";
 import { seedDemoPriorFacts } from "./seed-demo-prior";
 import { seedDemoCurrentVisit, type DemoCaseIds } from "./seed-demo-current";
+import { seedDemoCohort } from "./seed-demo-cohort";
 
 export async function seedDemoCase(
   db: AppDatabase,
@@ -28,6 +29,7 @@ export async function seedDemoCase(
   await seedDemoPriorFacts(db, tenantId);
   await seedDemoCurrentVisit(db, tenantId);
   await seedDemoPreviousVisitTrail(db, tenantId);
+  await seedDemoCohort(db, tenantId, _config);
 
   return {
     tenantId,
