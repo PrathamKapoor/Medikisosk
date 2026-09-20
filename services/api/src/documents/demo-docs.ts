@@ -68,7 +68,12 @@ Dr. S. Rao`;
 
 export interface DemoDocumentFixture {
   readonly name: string;
-  readonly documentType: "PRESCRIPTION" | "LAB_REPORT" | "DISCHARGE_SUMMARY" | "MEDICAL_CERTIFICATE" | "OTHER";
+  readonly documentType:
+    | "PRESCRIPTION"
+    | "LAB_REPORT"
+    | "DISCHARGE_SUMMARY"
+    | "MEDICAL_CERTIFICATE"
+    | "OTHER";
   readonly mimeType: "text/plain";
   readonly content: string;
   readonly bytes: Uint8Array;
@@ -92,8 +97,16 @@ function fixture(
 export const DEMO_DOCUMENTS: readonly DemoDocumentFixture[] = [
   fixture("prescription-demo.txt", "PRESCRIPTION", PRESCRIPTION_DEMO),
   fixture("lab-report-demo.txt", "LAB_REPORT", LAB_REPORT_DEMO),
-  fixture("discharge-summary-demo.txt", "DISCHARGE_SUMMARY", DISCHARGE_SUMMARY_DEMO),
-  fixture("medical-certificate-demo.txt", "MEDICAL_CERTIFICATE", MEDICAL_CERTIFICATE_DEMO),
+  fixture(
+    "discharge-summary-demo.txt",
+    "DISCHARGE_SUMMARY",
+    DISCHARGE_SUMMARY_DEMO,
+  ),
+  fixture(
+    "medical-certificate-demo.txt",
+    "MEDICAL_CERTIFICATE",
+    MEDICAL_CERTIFICATE_DEMO,
+  ),
   fixture("general-note-demo.txt", "OTHER", OTHER_DEMO),
 ];
 
@@ -113,7 +126,10 @@ export function mockOcrEntries(): Record<
 > {
   const entries: Record<string, { text: string; confidence: number }> = {};
   for (const fixture of DEMO_DOCUMENTS) {
-    entries[sha256Hex(fixture.bytes)] = { text: fixture.content, confidence: 0.99 };
+    entries[sha256Hex(fixture.bytes)] = {
+      text: fixture.content,
+      confidence: 0.99,
+    };
   }
   return entries;
 }

@@ -34,7 +34,11 @@ import type {
   SymptomRow,
   VitalRow,
 } from "../db/tables-clinical";
-import type { TriageAssessmentRow, LabResultRow, DocumentRow } from "../db/tables-evidence";
+import type {
+  TriageAssessmentRow,
+  LabResultRow,
+  DocumentRow,
+} from "../db/tables-evidence";
 
 const PATIENT_REPORTED = "PATIENT_REPORTED";
 const UNVERIFIED = "UNVERIFIED";
@@ -147,61 +151,69 @@ export async function loadInterview(
     .where("deletedAt", "is", null)
     .executeTakeFirstOrThrow();
 
-  const [responses, symptoms, conditions, medications, allergies, vitals, labResults, documents] =
-    await Promise.all([
-      db
-        .selectFrom("questionnaire_responses")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .orderBy("createdAt", "asc")
-        .orderBy("id", "asc")
-        .execute(),
-      db
-        .selectFrom("symptoms")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .execute(),
-      db
-        .selectFrom("history_entries")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .execute(),
-      db
-        .selectFrom("medications")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .execute(),
-      db
-        .selectFrom("allergy_records")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .execute(),
-      db
-        .selectFrom("vitals")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .orderBy("measuredAt", "desc")
-        .execute(),
-      db
-        .selectFrom("lab_results")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .execute(),
-      db
-        .selectFrom("documents")
-        .selectAll()
-        .where("encounterId", "=", encounterId)
-        .where("tenantId", "=", tenantId)
-        .where("deletedAt", "is", null)
-        .execute(),
-    ]);
+  const [
+    responses,
+    symptoms,
+    conditions,
+    medications,
+    allergies,
+    vitals,
+    labResults,
+    documents,
+  ] = await Promise.all([
+    db
+      .selectFrom("questionnaire_responses")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .orderBy("createdAt", "asc")
+      .orderBy("id", "asc")
+      .execute(),
+    db
+      .selectFrom("symptoms")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .execute(),
+    db
+      .selectFrom("history_entries")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .execute(),
+    db
+      .selectFrom("medications")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .execute(),
+    db
+      .selectFrom("allergy_records")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .execute(),
+    db
+      .selectFrom("vitals")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .orderBy("measuredAt", "desc")
+      .execute(),
+    db
+      .selectFrom("lab_results")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .execute(),
+    db
+      .selectFrom("documents")
+      .selectAll()
+      .where("encounterId", "=", encounterId)
+      .where("tenantId", "=", tenantId)
+      .where("deletedAt", "is", null)
+      .execute(),
+  ]);
 
   const input: InterviewInput = {
     complaints: parseJsonArray<string>(encounter.chiefComplaintCodesJson),

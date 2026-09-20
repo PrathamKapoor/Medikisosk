@@ -9,10 +9,7 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { MediKioskError } from "@medikiosk/shared-types";
-import {
-  DocumentService,
-  verifyEntityBodySchema,
-} from "./document.service";
+import { DocumentService, verifyEntityBodySchema } from "./document.service";
 import type { MutationResult } from "../kiosk/replay";
 
 function send(reply: FastifyReply, result: MutationResult) {
@@ -55,7 +52,13 @@ export async function registerDocumentRoutes(
       const documentType = String(fields.documentType?.value ?? "OTHER");
       return send(
         reply,
-        await service.upload(request, principal, encounterId, file, documentType),
+        await service.upload(
+          request,
+          principal,
+          encounterId,
+          file,
+          documentType,
+        ),
       );
     },
   );

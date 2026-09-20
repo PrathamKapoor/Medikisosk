@@ -307,7 +307,10 @@ export class IntakeService {
     encounterId: string,
     route: string,
     body: unknown,
-    execute: (tx: AppDatabase, loaded: LoadedInterview) => Promise<MutationResult>,
+    execute: (
+      tx: AppDatabase,
+      loaded: LoadedInterview,
+    ) => Promise<MutationResult>,
   ): Promise<MutationResult> {
     const now = this.deps.now();
     return replayMutation({
@@ -323,11 +326,7 @@ export class IntakeService {
       expiresAt: new Date(now.getTime() + 24 * 60 * 60_000).toISOString(),
       authenticate: async (tx) => {
         await sessionFor(tx, principal, now);
-        const loaded = await loadInterview(
-          tx,
-          principal.tenantId,
-          encounterId,
-        );
+        const loaded = await loadInterview(tx, principal.tenantId, encounterId);
         if (loaded.encounter.sessionId !== principal.sessionId)
           throw errors.notFound("Encounter");
         if (loaded.encounter.status === "SUBMITTED")
@@ -335,19 +334,19 @@ export class IntakeService {
             "ENCOUNTER_ALREADY_SUBMITTED",
             "This encounter has already been submitted.",
           );
-        await requireConsent(tx, {
-          tenantId: principal.tenantId,
-          patientId: loaded.encounter.patientId,
-          sessionId: principal.sessionId,
-          ...CONSENT_SCOPE,
-        }, now);
+        await requireConsent(
+          tx,
+          {
+            tenantId: principal.tenantId,
+            patientId: loaded.encounter.patientId,
+            sessionId: principal.sessionId,
+            ...CONSENT_SCOPE,
+          },
+          now,
+        );
       },
       execute: async (tx) => {
-        const loaded = await loadInterview(
-          tx,
-          principal.tenantId,
-          encounterId,
-        );
+        const loaded = await loadInterview(tx, principal.tenantId, encounterId);
         return execute(tx, loaded);
       },
     });
@@ -385,7 +384,13 @@ export class IntakeService {
       body,
       async (tx, loaded) => {
         const nowIso = this.deps.now().toISOString();
-        const inserted: { id: string; code: string; display: string; value: number; unit: string }[] = [];
+        const inserted: {
+          id: string;
+          code: string;
+          display: string;
+          value: number;
+          unit: string;
+        }[] = [];
 
         for (const entry of body.vitals) {
           const definition = vitalDefinition(entry.code);
@@ -410,7 +415,11 @@ export class IntakeService {
           let value = entry.value;
           let unit = definition.canonicalUnit;
           if (entry.unit) {
-            const converted = convertToCanonical(entry.code, entry.value, entry.unit);
+            const converted = convertToCanonical(
+              entry.code,
+              entry.value,
+              entry.unit,
+            );
             if (!converted)
               friendlyVitalError(
                 entry.code,
@@ -435,7 +444,9 @@ export class IntakeService {
             rawValue: `${entry.code}${entry.componentCode ? `:${entry.componentCode}` : ""} = ${value} ${unit}`,
             normalisedJson: {
               code: entry.code,
-              ...(entry.componentCode ? { componentCode: entry.componentCode } : {}),
+              ...(entry.componentCode
+                ? { componentCode: entry.componentCode }
+                : {}),
               value,
               unit,
             },
@@ -484,7 +495,11 @@ export class IntakeService {
           });
         }
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await this.refreshTriage(tx, reloaded, nowIso);
         await this.audit(tx, request, {
           tenantId: principal.tenantId,
@@ -523,7 +538,8 @@ export class IntakeService {
       body,
       async (tx, loaded) => {
         const nowIso = this.deps.now().toISOString();
-        const inserted: { id: string; kind: string; displayName: string }[] = [];
+        const inserted: { id: string; kind: string; displayName: string }[] =
+          [];
 
         for (const entry of body.entries) {
           const evidenceId = await insertIntakeEvidence(tx, {
@@ -580,7 +596,11 @@ export class IntakeService {
           });
         }
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await this.refreshTriage(tx, reloaded, nowIso);
         await this.audit(tx, request, {
           tenantId: principal.tenantId,
@@ -682,7 +702,11 @@ export class IntakeService {
           });
         }
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await this.refreshTriage(tx, reloaded, nowIso);
         await this.audit(tx, request, {
           tenantId: principal.tenantId,
@@ -780,7 +804,11 @@ export class IntakeService {
           });
         }
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await this.refreshTriage(tx, reloaded, nowIso);
         await this.audit(tx, request, {
           tenantId: principal.tenantId,
@@ -891,7 +919,11 @@ export class IntakeService {
         // Evidence rows are immutable: the statement remains on the record even when the
         // patient withdraws the entry before submission.
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await this.refreshTriage(tx, reloaded, nowIso);
         await this.audit(tx, request, {
           tenantId: principal.tenantId,

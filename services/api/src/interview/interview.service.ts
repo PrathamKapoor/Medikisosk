@@ -916,8 +916,7 @@ export class InterviewService {
         priority: triage.priority,
         queueEntryId: queueEntry.id,
         tokenNumber: queueEntry.tokenNumber,
-        queuePosition:
-          queueEntry.priority === "EMERGENCY" ? 1 : undefined,
+        queuePosition: queueEntry.priority === "EMERGENCY" ? 1 : undefined,
         incomplete: completion.status !== "COMPLETE",
         outstandingRequired: completion.outstandingRequired,
       },

@@ -47,29 +47,50 @@ interface VocabularyMatch {
 const MEDICATION_LINE =
   /^(Tab|Cap|Capsule|Syrup|Syp|Injection|Inj)?\.?\s*([A-Z][A-Za-z0-9-]+(?:\s+[A-Za-z0-9-]+)*)\s+(\d+(?:\.\d+)?)\s*(mg|ml|mcg|g|IU)\b\s*(OD|BD|TDS|QID|HS|SOS)?/i;
 const LAB_LINE =
-  /^([A-Z][A-Za-z0-9 .\-]*?)\s*[:=]\s*(-?\d+(?:\.\d+)?)\s*(g\/dL|g\/L|mg\/dL|mmol\/L|%|beats\/min|breaths\/min|Cel|°C|mmHg|kg\/m2|kg\/m²)?/i;
+  /^([A-Z][A-Za-z0-9 ._-]*?)\s*[:=]\s*(-?\d+(?:\.\d+)?)\s*(g\/dL|g\/L|mg\/dL|mmol\/L|%|beats\/min|breaths\/min|Cel|°C|mmHg|kg\/m2|kg\/m²)?/i;
 const PATIENT_LINE = /^Patient\s*[:=]\s*(.+)$/im;
 const DATE_LINE = /^Date\s*[:=]\s*(\d{4}-\d{2}-\d{2})/im;
-const PROVIDER_LINE = /^(?:Dr\.?|Provider|Reported by|Pathologist)\s*:?\s*(.+)$/im;
+const PROVIDER_LINE =
+  /^(?:Dr\.?|Provider|Reported by|Pathologist)\s*:?\s*(.+)$/im;
 const DIAGNOSIS_LINE = /^Diagnosis\s*[:=]\s*(.+)$/im;
 
 function matchLabOrVital(name: string): VocabularyMatch | undefined {
   const folded = name.trim().toLowerCase();
   for (const definition of LAB_TEST_DEFINITIONS) {
     if (definition.display.toLowerCase() === folded)
-      return { code: definition.code, display: definition.display, isVital: false };
+      return {
+        code: definition.code,
+        display: definition.display,
+        isVital: false,
+      };
     if (definition.aliases.some((alias) => alias.toLowerCase() === folded))
-      return { code: definition.code, display: definition.display, isVital: false };
+      return {
+        code: definition.code,
+        display: definition.display,
+        isVital: false,
+      };
   }
   for (const definition of VITAL_DEFINITIONS) {
     if (definition.display.toLowerCase() === folded)
-      return { code: definition.code, display: definition.display, isVital: true };
+      return {
+        code: definition.code,
+        display: definition.display,
+        isVital: true,
+      };
     if (definition.aliases.some((alias) => alias.toLowerCase() === folded))
-      return { code: definition.code, display: definition.display, isVital: true };
+      return {
+        code: definition.code,
+        display: definition.display,
+        isVital: true,
+      };
   }
   for (const definition of LAB_TEST_DEFINITIONS) {
     if (folded.includes(definition.display.toLowerCase()))
-      return { code: definition.code, display: definition.display, isVital: false };
+      return {
+        code: definition.code,
+        display: definition.display,
+        isVital: false,
+      };
   }
   return undefined;
 }
@@ -88,7 +109,9 @@ function matchConceptByName(name: string): ClinicalConcept | undefined {
  * Parse the OCR text into extracted entities. Deterministic: identical text always produces the
  * identical entity list, in fixed line order.
  */
-export function parseDocumentEntities(text: string): readonly ExtractedEntity[] {
+export function parseDocumentEntities(
+  text: string,
+): readonly ExtractedEntity[] {
   const entities: ExtractedEntity[] = [];
 
   const patient = PATIENT_LINE.exec(text);

@@ -40,15 +40,18 @@ export async function registerIntakeRoutes(
     );
   });
 
-  app.post("/api/v1/encounters/:encounterId/history", async (request, reply) => {
-    const { encounterId } = encounterParams.parse(request.params);
-    const principal = await service.authenticate(request);
-    const body = historyBodySchema.parse(request.body ?? {});
-    return send(
-      reply,
-      await service.addHistory(request, principal, encounterId, body),
-    );
-  });
+  app.post(
+    "/api/v1/encounters/:encounterId/history",
+    async (request, reply) => {
+      const { encounterId } = encounterParams.parse(request.params);
+      const principal = await service.authenticate(request);
+      const body = historyBodySchema.parse(request.body ?? {});
+      return send(
+        reply,
+        await service.addHistory(request, principal, encounterId, body),
+      );
+    },
+  );
 
   app.post(
     "/api/v1/encounters/:encounterId/medications",
@@ -84,7 +87,12 @@ export async function registerIntakeRoutes(
       const body = removeBodySchema.parse(request.body ?? {});
       return send(
         reply,
-        await service.removeClinicalEntry(request, principal, encounterId, body),
+        await service.removeClinicalEntry(
+          request,
+          principal,
+          encounterId,
+          body,
+        ),
       );
     },
   );

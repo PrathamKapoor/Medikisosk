@@ -109,7 +109,9 @@ describe("SHA-256 helper", () => {
     expect(Array.from(base64ToBytes("YWI="))).toEqual([0x61, 0x62]);
     expect(Array.from(base64ToBytes("YQ=="))).toEqual([0x61]);
     expect(Array.from(base64ToBytes("YWI"))).toEqual([0x61, 0x62]);
-    expect(sha256Hex(base64ToBytes("YWI="))).toBe(sha256Hex(new TextEncoder().encode("ab")));
+    expect(sha256Hex(base64ToBytes("YWI="))).toBe(
+      sha256Hex(new TextEncoder().encode("ab")),
+    );
   });
 });
 

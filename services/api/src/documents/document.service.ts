@@ -24,9 +24,7 @@ import {
   type KioskTokenClaims,
 } from "@medikiosk/auth";
 import { errors, MediKioskError } from "@medikiosk/shared-types";
-import {
-  DeterministicMockOcrProvider,
-} from "@medikiosk/ai";
+import { DeterministicMockOcrProvider } from "@medikiosk/ai";
 import { flagLabResult, labTestDefinition } from "@medikiosk/clinical-schema";
 import { selectActivePathways } from "@medikiosk/interview-engine";
 import type { FastifyRequest } from "fastify";
@@ -43,11 +41,12 @@ import { appendAuditEvent, type AuditAction } from "../platform/audit";
 import { authenticateStaff } from "../auth/middleware/authenticate";
 import { parseRoles } from "../auth/repository/user.repo";
 import { evaluateAndPersistTriage } from "../interview/triage.build";
+import { loadInterview, type LoadedInterview } from "../interview/state.repo";
 import {
-  loadInterview,
-  type LoadedInterview,
-} from "../interview/state.repo";
-import { demoDocumentByName, DEMO_DOCUMENTS, mockOcrEntries } from "./demo-docs";
+  demoDocumentByName,
+  DEMO_DOCUMENTS,
+  mockOcrEntries,
+} from "./demo-docs";
 import { parseDocumentEntities } from "./parse-entities";
 
 const CONSENT_SCOPE = {
@@ -76,11 +75,34 @@ const ALLOWED_MIME: Record<string, string> = {
   "image/jpeg": ".jpg",
   "image/png": ".png",
 };
-const ALLOWED_EXTENSIONS = new Set([".txt", ".md", ".pdf", ".jpg", ".jpeg", ".png"]);
+const ALLOWED_EXTENSIONS = new Set([
+  ".txt",
+  ".md",
+  ".pdf",
+  ".jpg",
+  ".jpeg",
+  ".png",
+]);
 /** Executable / active-content extensions are never accepted, whatever the MIME claims. */
 const BLOCKED_EXTENSIONS = new Set([
-  ".exe", ".msi", ".bat", ".cmd", ".com", ".scr", ".ps1", ".vbs", ".js",
-  ".jar", ".apk", ".dll", ".sh", ".html", ".htm", ".svg", ".swf", ".lnk",
+  ".exe",
+  ".msi",
+  ".bat",
+  ".cmd",
+  ".com",
+  ".scr",
+  ".ps1",
+  ".vbs",
+  ".js",
+  ".jar",
+  ".apk",
+  ".dll",
+  ".sh",
+  ".html",
+  ".htm",
+  ".svg",
+  ".swf",
+  ".lnk",
 ]);
 
 export const verifyEntityBodySchema = z
@@ -242,7 +264,9 @@ export class DocumentService {
     file: MultipartFile,
     documentType: string,
   ): Promise<MutationResult> {
-    if (!DOCUMENT_TYPES.includes(documentType as (typeof DOCUMENT_TYPES)[number]))
+    if (
+      !DOCUMENT_TYPES.includes(documentType as (typeof DOCUMENT_TYPES)[number])
+    )
       throw errors.validation(
         "Document type must be one of PRESCRIPTION, LAB_REPORT, DISCHARGE_SUMMARY, MEDICAL_CERTIFICATE or OTHER.",
       );
@@ -304,12 +328,16 @@ export class DocumentService {
             "ENCOUNTER_ALREADY_SUBMITTED",
             "This encounter has already been submitted.",
           );
-        await requireConsent(tx, {
-          tenantId: principal.tenantId,
-          patientId: loaded.encounter.patientId,
-          sessionId: principal.sessionId,
-          ...CONSENT_SCOPE,
-        }, now);
+        await requireConsent(
+          tx,
+          {
+            tenantId: principal.tenantId,
+            patientId: loaded.encounter.patientId,
+            sessionId: principal.sessionId,
+            ...CONSENT_SCOPE,
+          },
+          now,
+        );
       },
       execute: async (tx) => {
         const recorded = this.deps.now().toISOString();
@@ -348,7 +376,10 @@ export class DocumentService {
 
         // Content-addressed storage: writing the same bytes twice lands on the same path.
         await mkdir(this.deps.config.MEDIKIOSK_UPLOAD_DIR, { recursive: true });
-        await writeFile(join(this.deps.config.MEDIKIOSK_UPLOAD_DIR, storageName), bytes);
+        await writeFile(
+          join(this.deps.config.MEDIKIOSK_UPLOAD_DIR, storageName),
+          bytes,
+        );
 
         const documentId = ulid();
         const ocrResult = await this.ocr.extract({
@@ -525,10 +556,7 @@ export class DocumentService {
    * GET /encounters/:id/documents — the kiosk owner, or staff with `document.read` reading through
    * the clinical case.
    */
-  async list(
-    request: FastifyRequest,
-    encounterId: string,
-  ): Promise<unknown> {
+  async list(request: FastifyRequest, encounterId: string): Promise<unknown> {
     let tenantId: string;
     try {
       const principal = await this.authenticate(request);
@@ -544,7 +572,10 @@ export class DocumentService {
         throw errors.notFound("Encounter");
       tenantId = principal.tenantId;
     } catch (error) {
-      if (!(error instanceof MediKioskError) || error.code !== "UNAUTHENTICATED")
+      if (
+        !(error instanceof MediKioskError) ||
+        error.code !== "UNAUTHENTICATED"
+      )
         throw error;
       tenantId = (await this.staffWith(request, "document.read")).tenantId;
     }
@@ -628,7 +659,10 @@ export class DocumentService {
         throw errors.notFound("Document");
       tenantId = principal.tenantId;
     } catch (error) {
-      if (!(error instanceof MediKioskError) || error.code !== "UNAUTHENTICATED")
+      if (
+        !(error instanceof MediKioskError) ||
+        error.code !== "UNAUTHENTICATED"
+      )
         throw error;
       tenantId = (await this.staffWith(request, "document.read")).tenantId;
     }
@@ -645,11 +679,15 @@ export class DocumentService {
     const bytes = await readFile(
       join(this.deps.config.MEDIKIOSK_UPLOAD_DIR, document.storagePath),
     );
-    const quality = JSON.parse(document.qualityJson) as { originalName?: string };
+    const quality = JSON.parse(document.qualityJson) as {
+      originalName?: string;
+    };
     return {
       bytes: new Uint8Array(bytes),
       mimeType: document.mimeType,
-      filename: sanitiseOriginalName(quality.originalName ?? `document-${documentId}`),
+      filename: sanitiseOriginalName(
+        quality.originalName ?? `document-${documentId}`,
+      ),
     };
   }
 
@@ -690,12 +728,16 @@ export class DocumentService {
             "ENCOUNTER_ALREADY_SUBMITTED",
             "This encounter has already been submitted.",
           );
-        await requireConsent(tx, {
-          tenantId: principal.tenantId,
-          patientId: loaded.encounter.patientId,
-          sessionId: principal.sessionId,
-          ...CONSENT_SCOPE,
-        }, now);
+        await requireConsent(
+          tx,
+          {
+            tenantId: principal.tenantId,
+            patientId: loaded.encounter.patientId,
+            sessionId: principal.sessionId,
+            ...CONSENT_SCOPE,
+          },
+          now,
+        );
       },
       execute: async (tx) => {
         const recorded = this.deps.now().toISOString();
@@ -711,7 +753,11 @@ export class DocumentService {
         if (document.status === "PATIENT_CONFIRMED")
           return {
             status: 200,
-            body: { documentId, status: "PATIENT_CONFIRMED", alreadyConfirmed: true },
+            body: {
+              documentId,
+              status: "PATIENT_CONFIRMED",
+              alreadyConfirmed: true,
+            },
           };
         if (document.status === "REJECTED")
           throw new MediKioskError(
@@ -774,7 +820,8 @@ export class DocumentService {
                   stoppedOn: null,
                   // Prescribed-ness comes from the document type, not assumed: a prescription
                   // states the intent to prescribe; a lab report that mentions a drug does not.
-                  isPrescribed: document.documentType === "PRESCRIPTION" ? 1 : 0,
+                  isPrescribed:
+                    document.documentType === "PRESCRIPTION" ? 1 : 0,
                   documentId,
                   originClass: DOCUMENT_DERIVED,
                   confidence: entity.confidence,
@@ -807,7 +854,9 @@ export class DocumentService {
                 value,
                 unit,
               });
-              const reference = labTestDefinition(entity.testCode)?.defaultReference;
+              const reference = labTestDefinition(
+                entity.testCode,
+              )?.defaultReference;
               await tx
                 .insertInto("lab_results")
                 .values({
@@ -878,7 +927,11 @@ export class DocumentService {
           .where("tenantId", "=", principal.tenantId)
           .execute();
 
-        const reloaded = await loadInterview(tx, principal.tenantId, encounterId);
+        const reloaded = await loadInterview(
+          tx,
+          principal.tenantId,
+          encounterId,
+        );
         const triage = await evaluateAndPersistTriage(
           tx,
           reloaded,
@@ -1007,155 +1060,218 @@ export class DocumentService {
     // single-connection SQLite driver.
     return this.staffWith(request, "document.verify").then((principal) =>
       this.deps.db.transaction().execute(async (tx) => {
-      const entity = await tx
-        .selectFrom("document_entities")
-        .selectAll()
-        .where("id", "=", entityId)
-        .where("tenantId", "=", principal.tenantId)
-        .where("documentId", "=", documentId)
-        .executeTakeFirst();
-      if (!entity) throw errors.notFound("Entity");
-      const document = await tx
-        .selectFrom("documents")
-        .selectAll()
-        .where("id", "=", documentId)
-        .where("tenantId", "=", principal.tenantId)
-        .where("deletedAt", "is", null)
-        .executeTakeFirst();
-      if (!document) throw errors.notFound("Document");
+        const entity = await tx
+          .selectFrom("document_entities")
+          .selectAll()
+          .where("id", "=", entityId)
+          .where("tenantId", "=", principal.tenantId)
+          .where("documentId", "=", documentId)
+          .executeTakeFirst();
+        if (!entity) throw errors.notFound("Entity");
+        const document = await tx
+          .selectFrom("documents")
+          .selectAll()
+          .where("id", "=", documentId)
+          .where("tenantId", "=", principal.tenantId)
+          .where("deletedAt", "is", null)
+          .executeTakeFirst();
+        if (!document) throw errors.notFound("Document");
 
-      const recorded = this.deps.now().toISOString();
-      let resultBody: Record<string, unknown>;
+        const recorded = this.deps.now().toISOString();
+        let resultBody: Record<string, unknown>;
 
-      if (body.action === "VERIFY") {
-        await this.markEntity(tx, entityId, principal.tenantId, "VERIFIED", principal.userId, recorded);
-        await this.markEvidence(tx, principal.tenantId, entity, "VERIFIED", principal.userId, recorded);
-        await this.markFactRow(tx, principal, document, entity, "VERIFIED", recorded, null);
-        await this.maybeMarkDocumentVerified(tx, principal.tenantId, documentId, recorded);
-        await this.audit(tx, request, "STAFF", {
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          action: "FACT_VERIFIED",
-          resourceId: entityId,
-          encounterId: document.encounterId,
-          detail: { kind: entity.kind },
-        });
-        resultBody = { entityId, verificationState: "VERIFIED" };
-      } else if (body.action === "REJECT") {
-        await this.markEntity(tx, entityId, principal.tenantId, "REJECTED", principal.userId, recorded);
-        await this.markEvidence(tx, principal.tenantId, entity, "REJECTED", principal.userId, recorded);
-        await this.removeFactRow(tx, principal.tenantId, document, entity);
-        await this.audit(tx, request, "STAFF", {
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          action: "FACT_REJECTED",
-          resourceId: entityId,
-          encounterId: document.encounterId,
-          detail: { kind: entity.kind },
-        });
-        resultBody = { entityId, verificationState: "REJECTED" };
-      } else {
-        const corrected = body.correctedJson ?? {};
-        const merged = {
-          ...(entity.normalisedJson ? JSON.parse(entity.normalisedJson) : {}),
-          ...corrected,
-        };
-        // New evidence row (the old one is superseded, never rewritten).
-        const newEvidenceId = ulid();
-        await tx
-          .insertInto("evidence")
-          .values({
-            id: newEvidenceId,
+        if (body.action === "VERIFY") {
+          await this.markEntity(
+            tx,
+            entityId,
+            principal.tenantId,
+            "VERIFIED",
+            principal.userId,
+            recorded,
+          );
+          await this.markEvidence(
+            tx,
+            principal.tenantId,
+            entity,
+            "VERIFIED",
+            principal.userId,
+            recorded,
+          );
+          await this.markFactRow(
+            tx,
+            principal,
+            document,
+            entity,
+            "VERIFIED",
+            recorded,
+            null,
+          );
+          await this.maybeMarkDocumentVerified(
+            tx,
+            principal.tenantId,
+            documentId,
+            recorded,
+          );
+          await this.audit(tx, request, "STAFF", {
             tenantId: principal.tenantId,
+            actorId: principal.userId,
+            action: "FACT_VERIFIED",
+            resourceId: entityId,
             encounterId: document.encounterId,
-            type: "DOCUMENT_ENTITY",
-            originClass: DOCUMENT_DERIVED,
-            source: "document",
-            sourceRef: documentId,
-            rawValue: entity.rawText,
-            normalisedJson: JSON.stringify({ ...merged, correctedBy: "clinician" }),
-            confidence: entity.confidence,
-            language: null,
-            capturedAt: recorded,
-            createdBy: principal.userId,
-            verificationState: "VERIFIED",
-            verifiedAt: recorded,
-            verifiedBy: principal.userId,
-            supersededBy: null,
-          })
-          .execute();
-        if (entity.evidenceId) {
+            detail: { kind: entity.kind },
+          });
+          resultBody = { entityId, verificationState: "VERIFIED" };
+        } else if (body.action === "REJECT") {
+          await this.markEntity(
+            tx,
+            entityId,
+            principal.tenantId,
+            "REJECTED",
+            principal.userId,
+            recorded,
+          );
+          await this.markEvidence(
+            tx,
+            principal.tenantId,
+            entity,
+            "REJECTED",
+            principal.userId,
+            recorded,
+          );
+          await this.removeFactRow(tx, principal.tenantId, document, entity);
+          await this.audit(tx, request, "STAFF", {
+            tenantId: principal.tenantId,
+            actorId: principal.userId,
+            action: "FACT_REJECTED",
+            resourceId: entityId,
+            encounterId: document.encounterId,
+            detail: { kind: entity.kind },
+          });
+          resultBody = { entityId, verificationState: "REJECTED" };
+        } else {
+          const corrected = body.correctedJson ?? {};
+          const merged = {
+            ...(entity.normalisedJson ? JSON.parse(entity.normalisedJson) : {}),
+            ...corrected,
+          };
+          // New evidence row (the old one is superseded, never rewritten).
+          const newEvidenceId = ulid();
+          await tx
+            .insertInto("evidence")
+            .values({
+              id: newEvidenceId,
+              tenantId: principal.tenantId,
+              encounterId: document.encounterId,
+              type: "DOCUMENT_ENTITY",
+              originClass: DOCUMENT_DERIVED,
+              source: "document",
+              sourceRef: documentId,
+              rawValue: entity.rawText,
+              normalisedJson: JSON.stringify({
+                ...merged,
+                correctedBy: "clinician",
+              }),
+              confidence: entity.confidence,
+              language: null,
+              capturedAt: recorded,
+              createdBy: principal.userId,
+              verificationState: "VERIFIED",
+              verifiedAt: recorded,
+              verifiedBy: principal.userId,
+              supersededBy: null,
+            })
+            .execute();
+          if (entity.evidenceId) {
+            await tx
+              .updateTable("evidence")
+              .set({ supersededBy: newEvidenceId })
+              .where("id", "=", entity.evidenceId)
+              .where("tenantId", "=", principal.tenantId)
+              .execute();
+          }
+          await this.markEntity(
+            tx,
+            entityId,
+            principal.tenantId,
+            "CORRECTED",
+            principal.userId,
+            recorded,
+          );
+          const newEntityId = ulid();
+          await tx
+            .insertInto("document_entities")
+            .values({
+              id: newEntityId,
+              tenantId: principal.tenantId,
+              documentId,
+              kind: entity.kind,
+              conceptCode: entity.conceptCode,
+              testCode: entity.testCode,
+              rawText: entity.rawText,
+              normalisedJson: JSON.stringify(merged),
+              flag: entity.flag,
+              confidence: entity.confidence,
+              verificationState: "VERIFIED",
+              needsClinicianReview: 0,
+              evidenceId: newEvidenceId,
+              verifiedAt: recorded,
+              verifiedBy: principal.userId,
+              createdAt: recorded,
+              updatedAt: recorded,
+            })
+            .execute();
           await tx
             .updateTable("evidence")
-            .set({ supersededBy: newEvidenceId })
-            .where("id", "=", entity.evidenceId)
-            .where("tenantId", "=", principal.tenantId)
+            .set({ sourceRef: newEntityId })
+            .where("id", "=", newEvidenceId)
             .execute();
-        }
-        await this.markEntity(tx, entityId, principal.tenantId, "CORRECTED", principal.userId, recorded);
-        const newEntityId = ulid();
-        await tx
-          .insertInto("document_entities")
-          .values({
-            id: newEntityId,
+          await this.markFactRow(
+            tx,
+            principal,
+            document,
+            entity,
+            "VERIFIED",
+            recorded,
+            corrected,
+          );
+          await this.audit(tx, request, "STAFF", {
             tenantId: principal.tenantId,
-            documentId,
-            kind: entity.kind,
-            conceptCode: entity.conceptCode,
-            testCode: entity.testCode,
-            rawText: entity.rawText,
-            normalisedJson: JSON.stringify(merged),
-            flag: entity.flag,
-            confidence: entity.confidence,
+            actorId: principal.userId,
+            action: "FACT_EDITED",
+            resourceId: newEntityId,
+            encounterId: document.encounterId,
+            // Field names only, never clinical values: the audit trail is PHI-free by construction.
+            detail: {
+              kind: entity.kind,
+              correctedFields: Object.keys(corrected).sort().join(","),
+            },
+          });
+          resultBody = {
+            entityId: newEntityId,
+            supersedes: entityId,
             verificationState: "VERIFIED",
-            needsClinicianReview: 0,
-            evidenceId: newEvidenceId,
-            verifiedAt: recorded,
-            verifiedBy: principal.userId,
-            createdAt: recorded,
-            updatedAt: recorded,
-          })
-          .execute();
-        await tx
-          .updateTable("evidence")
-          .set({ sourceRef: newEntityId })
-          .where("id", "=", newEvidenceId)
-          .execute();
-        await this.markFactRow(tx, principal, document, entity, "VERIFIED", recorded, corrected);
-        await this.audit(tx, request, "STAFF", {
-          tenantId: principal.tenantId,
-          actorId: principal.userId,
-          action: "FACT_EDITED",
-          resourceId: newEntityId,
-          encounterId: document.encounterId,
-          // Field names only, never clinical values: the audit trail is PHI-free by construction.
-          detail: {
-            kind: entity.kind,
-            correctedFields: Object.keys(corrected).sort().join(","),
-          },
-        });
-        resultBody = {
-          entityId: newEntityId,
-          supersedes: entityId,
-          verificationState: "VERIFIED",
-        };
-      }
+          };
+        }
 
-      // Verification shifts clinical state: re-run the safety rules so the case view is current.
-      try {
-        const loaded = await loadInterview(tx, principal.tenantId, document.encounterId);
-        await evaluateAndPersistTriage(
-          tx,
-          loaded,
-          selectActivePathways(loaded.input),
-          recorded,
-        );
-      } catch {
-        // Encounter rows may predate the interview runtime (seeded history); triage then stays
-        // as assessed. Verification itself must not fail because of it.
-      }
+        // Verification shifts clinical state: re-run the safety rules so the case view is current.
+        try {
+          const loaded = await loadInterview(
+            tx,
+            principal.tenantId,
+            document.encounterId,
+          );
+          await evaluateAndPersistTriage(
+            tx,
+            loaded,
+            selectActivePathways(loaded.input),
+            recorded,
+          );
+        } catch {
+          // Encounter rows may predate the interview runtime (seeded history); triage then stays
+          // as assessed. Verification itself must not fail because of it.
+        }
 
-      return { status: 200, body: resultBody };
+        return { status: 200, body: resultBody };
       }),
     );
   }
@@ -1204,14 +1320,19 @@ export class DocumentService {
     tenantId: string,
     encounterId: string,
     documentId: string,
-    entity: { kind: string; rawText: string; testCode: string | null; conceptCode: string | null; normalisedJson: string | null },
-  ):
-    | Promise<
-        | { table: "medications"; id: string }
-        | { table: "lab_results"; id: string }
-        | { table: "vitals"; id: string }
-        | null
-      > {
+    entity: {
+      kind: string;
+      rawText: string;
+      testCode: string | null;
+      conceptCode: string | null;
+      normalisedJson: string | null;
+    },
+  ): Promise<
+    | { table: "medications"; id: string }
+    | { table: "lab_results"; id: string }
+    | { table: "vitals"; id: string }
+    | null
+  > {
     if (entity.kind === "MEDICATION") {
       // The fact row stores the parsed name when one was extracted, else the raw line.
       const normalised = entity.normalisedJson
@@ -1272,7 +1393,13 @@ export class DocumentService {
     tx: Transaction<Database>,
     principal: { tenantId: string; userId: string },
     document: { id: string; encounterId: string },
-    entity: { kind: string; rawText: string; testCode: string | null; conceptCode: string | null; normalisedJson: string | null },
+    entity: {
+      kind: string;
+      rawText: string;
+      testCode: string | null;
+      conceptCode: string | null;
+      normalisedJson: string | null;
+    },
     state: string,
     recorded: string,
     corrected: Record<string, unknown> | null,
@@ -1296,7 +1423,9 @@ export class DocumentService {
           ? corrected.name
           : undefined;
       const frequency =
-        corrected && typeof corrected.frequency === "string" && corrected.frequency
+        corrected &&
+        typeof corrected.frequency === "string" &&
+        corrected.frequency
           ? corrected.frequency
           : undefined;
       await tx
@@ -1376,7 +1505,13 @@ export class DocumentService {
     tx: Transaction<Database>,
     tenantId: string,
     document: { id: string; encounterId: string },
-    entity: { kind: string; rawText: string; testCode: string | null; conceptCode: string | null; normalisedJson: string | null },
+    entity: {
+      kind: string;
+      rawText: string;
+      testCode: string | null;
+      conceptCode: string | null;
+      normalisedJson: string | null;
+    },
   ): Promise<void> {
     const found = await this.findFactRow(
       tx,
@@ -1422,9 +1557,7 @@ export class DocumentService {
   // -------------------------------------------------------------------------
 
   /** GET /demo-documents — the fixed synthetic set the kiosk offers for attachment. */
-  async listDemoDocuments(
-    request: FastifyRequest,
-  ): Promise<unknown> {
+  async listDemoDocuments(request: FastifyRequest): Promise<unknown> {
     const principal = await this.authenticate(request);
     await sessionFor(this.deps.db, principal, this.deps.now());
     return DEMO_DOCUMENTS.map((fixture) => ({

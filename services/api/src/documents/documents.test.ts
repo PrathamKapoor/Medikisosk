@@ -10,11 +10,7 @@ import { randomUUID } from "node:crypto";
 import { unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  buildTestApp,
-  TEST_NOW,
-  type BuiltTestApp,
-} from "../testing/test-app";
+import { buildTestApp, TEST_NOW, type BuiltTestApp } from "../testing/test-app";
 import { DEMO_KIOSK_DEVICE_TOKEN } from "../db/seed";
 
 let fixture: BuiltTestApp;
@@ -178,7 +174,12 @@ async function uploadFile(
 describe("document pipeline", () => {
   it("lists the synthetic demo documents to an active kiosk session", async () => {
     const { mutate } = await kioskSession();
-    const listed = await mutate("/api/v1/demo-documents", undefined, randomUUID(), "GET");
+    const listed = await mutate(
+      "/api/v1/demo-documents",
+      undefined,
+      randomUUID(),
+      "GET",
+    );
     expect(listed.status).toBe(200);
     const documents = listed.json() as { name: string; documentType: string }[];
     expect(documents.map((d) => d.name)).toContain("prescription-demo.txt");
@@ -212,7 +213,12 @@ describe("document pipeline", () => {
       documentId: string;
       status: string;
       demoExtraction: boolean;
-      entities: { id: string; kind: string; rawText: string; confidence: number }[];
+      entities: {
+        id: string;
+        kind: string;
+        rawText: string;
+        confidence: number;
+      }[];
     };
     expect(result.status).toBe("EXTRACTED");
     expect(result.demoExtraction).toBe(true);
@@ -377,7 +383,10 @@ describe("document pipeline", () => {
         field: "file",
         filename: "random-note.txt",
         mimeType: "text/plain",
-        bytes: Buffer.from("some random clinic note about parking fees", "utf8"),
+        bytes: Buffer.from(
+          "some random clinic note about parking fees",
+          "utf8",
+        ),
       },
     );
     expect(uploaded.status).toBe(201);
