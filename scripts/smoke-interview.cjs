@@ -79,9 +79,16 @@ const ANSWERS = {
   out.push('completion=' + JSON.stringify({ status: completion.status, maxQuestionsReached: completion.maxQuestionsReached, outstanding: completion.outstandingRequired.length }));
   out.push('safety=' + JSON.stringify(safety));
 
+  const review = await get(`/api/v1/encounters/${encounterId}/review`, auth);
+  if (review.error) throw new Error('review failed: ' + JSON.stringify(review));
+  out.push('review sections: symptoms=' + review.symptoms.length + ' evidence=' + review.evidence.length + ' safety=' + (review.safety && review.safety.level));
+  const confirm = await post(`/api/v1/encounters/${encounterId}/confirm`, { ...auth, 'Idempotency-Key': uuid() }, {});
+  if (confirm.error) throw new Error('confirm failed: ' + JSON.stringify(confirm));
+  out.push('confirmed at ' + confirm.patientConfirmedAt);
+
   const submit = await post(`/api/v1/encounters/${encounterId}/submit`, { ...auth, 'Idempotency-Key': uuid() }, {});
   if (submit.error) throw new Error('submit failed: ' + JSON.stringify(submit));
-  out.push('submit=' + JSON.stringify({ status: submit.status, triageLevel: submit.triageLevel, priority: submit.priority, incomplete: submit.incomplete }));
+  out.push('submit=' + JSON.stringify({ status: submit.status, triageLevel: submit.triageLevel, priority: submit.priority, tokenNumber: submit.tokenNumber, incomplete: submit.incomplete }));
 
   // DB reconstruction proof (read-only, in-process so no shell quoting esoterica).
   const Database = require('better-sqlite3');

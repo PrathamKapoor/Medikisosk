@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MediKiosk Console — Clinical workstation</title>
+    <link rel="stylesheet" href="./css/console.css" />
+    <script type="importmap">
+      { "imports": { "ogl": "./vendor/ogl/index.js" } }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#view">Skip to content</a>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path
+              d="M7 23V9l9 10 9-10v14"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+        <span>Medi<span class="brand-light">Kiosk</span> Console</span>
+      </div>
+      <nav class="topnav" aria-label="Console sections">
+        <a href="#/queue" data-nav="queue">Queue</a>
+        <a href="#/patients" data-nav="patients">Patients</a>
+        <a href="#/admin" data-nav="admin">Admin</a>
+      </nav>
+      <div class="userbox">
+        <span id="user-label"></span>
+        <button id="logout-button" class="text-button" hidden>Log out</button>
+      </div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+    <footer class="footer">
+      <span>MediKiosk clinical console</span>
+      <span id="api-status" role="status"></span>
+    </footer>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
