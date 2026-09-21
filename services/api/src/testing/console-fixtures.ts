@@ -20,7 +20,7 @@ export type ConsoleMutate = (
 
 export interface ConsoleFixture {
   readonly fixture: BuiltTestApp;
-  readonly session: Record<string, string>;
+  readonly session: { sessionId: string; token: string };
   readonly patientId: string;
   readonly encounterId: string;
   readonly mutate: ConsoleMutate;
@@ -48,7 +48,7 @@ export async function openConsoleFixture(
   });
   if (opened.statusCode !== 201)
     throw new Error(`session open failed: ${opened.statusCode}`);
-  const session = opened.json() as Record<string, string>;
+  const session = opened.json() as { sessionId: string; token: string };
   const mutate: ConsoleMutate = (
     url,
     payload,

@@ -15,7 +15,8 @@ import type {
   FhirResource,
 } from "./types";
 
-export const FHIR_EXPORT_PROFILE = "https://medikiosk.example/fhir/StructureDefinition/demo-export";
+export const FHIR_EXPORT_PROFILE =
+  "https://medikiosk.example/fhir/StructureDefinition/demo-export";
 export const FHIR_EXPORT_META = {
   profile: [FHIR_EXPORT_PROFILE],
   tag: [
@@ -44,7 +45,8 @@ function codeableConcept(
   };
 }
 
-const MK_SYSTEM = "https://medikiosk.example/fhir/CodeSystem/medikiosk-concepts";
+const MK_SYSTEM =
+  "https://medikiosk.example/fhir/CodeSystem/medikiosk-concepts";
 
 function patientResource(input: ExportCase): FhirResource {
   const patient = input.patient;
@@ -58,9 +60,7 @@ function patientResource(input: ExportCase): FhirResource {
         value: patient.id,
       },
     ],
-    name: patient.fullName
-      ? [{ text: patient.fullName }]
-      : undefined,
+    name: patient.fullName ? [{ text: patient.fullName }] : undefined,
     birthDate: patient.dateOfBirth ?? undefined,
     gender:
       patient.sex === "MALE"
@@ -75,7 +75,11 @@ function patientResource(input: ExportCase): FhirResource {
       : undefined,
     communication: [
       {
-        language: codeableConcept("urn:ietf:bcp:47", patient.preferredLanguage, patient.preferredLanguage),
+        language: codeableConcept(
+          "urn:ietf:bcp:47",
+          patient.preferredLanguage,
+          patient.preferredLanguage,
+        ),
         preferred: true,
       },
     ],
@@ -124,7 +128,8 @@ function observationResource(
       {
         coding: [
           {
-            system: "http://terminology.hl7.org/CodeSystem/observation-category",
+            system:
+              "http://terminology.hl7.org/CodeSystem/observation-category",
             code: "vital-signs",
           },
         ],
@@ -143,7 +148,11 @@ function observationResource(
     component: observation.componentCode
       ? [
           {
-            code: codeableConcept(MK_SYSTEM, observation.componentCode, observation.componentCode),
+            code: codeableConcept(
+              MK_SYSTEM,
+              observation.componentCode,
+              observation.componentCode,
+            ),
           },
         ]
       : undefined,
@@ -164,7 +173,8 @@ function labObservationResource(
       {
         coding: [
           {
-            system: "http://terminology.hl7.org/CodeSystem/observation-category",
+            system:
+              "http://terminology.hl7.org/CodeSystem/observation-category",
             code: "laboratory",
           },
         ],
@@ -266,7 +276,8 @@ function allergyResource(
     clinicalStatus: {
       coding: [
         {
-          system: "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+          system:
+            "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
           code: "active",
         },
       ],
@@ -292,7 +303,11 @@ function documentReferenceResource(
     id: document.id,
     meta: FHIR_EXPORT_META,
     status: document.status,
-    type: codeableConcept(MK_SYSTEM, document.documentType, document.documentType),
+    type: codeableConcept(
+      MK_SYSTEM,
+      document.documentType,
+      document.documentType,
+    ),
     subject: ref("Patient", patientId),
     context: {
       encounter: [ref("Encounter", encounterId)],
@@ -335,9 +350,7 @@ export function mapEncounterBundle(input: ExportCase): FhirBundle {
     ...input.medications.map((medication) =>
       medicationStatementResource(patientId, medication),
     ),
-    ...input.allergies.map((allergy) =>
-      allergyResource(patientId, allergy),
-    ),
+    ...input.allergies.map((allergy) => allergyResource(patientId, allergy)),
     ...input.documents.map((document) =>
       documentReferenceResource(patientId, encounterId, document),
     ),

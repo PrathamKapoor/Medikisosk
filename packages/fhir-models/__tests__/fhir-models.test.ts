@@ -4,6 +4,7 @@ import {
   validateBundle,
   assertValidBundle,
   type ExportCase,
+  type FhirBundle,
 } from "../src/index";
 
 const BASE: ExportCase = {
@@ -134,8 +135,7 @@ describe("FHIR encounter bundle mapping", () => {
     for (const entry of bundle.entry) {
       for (const field of ["subject", "patient", "encounter"]) {
         const value = (entry.resource as Record<string, unknown>)[field] as
-          | { reference?: string }
-          | undefined;
+          { reference?: string } | undefined;
         if (value?.reference) expect(ids.has(value.reference)).toBe(true);
       }
     }
@@ -160,14 +160,15 @@ describe("FHIR encounter bundle mapping", () => {
 
   it("validator reports unresolved references and missing integration resources", () => {
     const bundle = mapEncounterBundle(BASE);
-    const broken = {
+    const broken: FhirBundle = {
       ...bundle,
       entry: bundle.entry.slice(0, 3).map((entry, index) =>
         index === 1
           ? {
-              ...entry,
+              fullUrl: entry.fullUrl,
               resource: {
-                ...(entry.resource as Record<string, unknown>),
+                resourceType: entry.resource.resourceType,
+                id: entry.resource.id,
                 subject: { reference: "Patient/missing" },
               },
             }

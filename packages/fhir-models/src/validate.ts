@@ -14,10 +14,7 @@ export interface ValidationIssue {
   readonly problem: string;
 }
 
-const REQUIRED_INTEGRATION_RESOURCES = new Set([
-  "Patient",
-  "Encounter",
-]);
+const REQUIRED_INTEGRATION_RESOURCES = new Set(["Patient", "Encounter"]);
 
 const PATIENT_ID_PATTERN = /^[A-Za-z0-9\-\.]{1,64}$/;
 
@@ -29,9 +26,11 @@ export function validateBundle(bundle: FhirBundle): readonly ValidationIssue[] {
   const push = (path: string, problem: string) =>
     issues.push({ path, problem });
 
-  if (bundle.resourceType !== "Bundle") push("Bundle", "resourceType must be 'Bundle'");
+  if (bundle.resourceType !== "Bundle")
+    push("Bundle", "resourceType must be 'Bundle'");
   if (!bundle.timestamp) push("Bundle.timestamp", "timestamp is required");
-  if (!Array.isArray(bundle.entry)) push("Bundle.entry", "entry array is required");
+  if (!Array.isArray(bundle.entry))
+    push("Bundle.entry", "entry array is required");
 
   const seen = new Map<string, FhirResource>();
   for (const [index, entry] of (bundle.entry ?? []).entries()) {
@@ -52,7 +51,9 @@ export function validateBundle(bundle: FhirBundle): readonly ValidationIssue[] {
 
   // The integration minimum: exactly one Patient and one Encounter.
   for (const required of REQUIRED_INTEGRATION_RESOURCES) {
-    const matching = [...seen.keys()].filter((key) => key.startsWith(`${required}/`));
+    const matching = [...seen.keys()].filter((key) =>
+      key.startsWith(`${required}/`),
+    );
     if (matching.length === 0)
       push("Bundle", `${required} resource is required`);
     if (matching.length > 1)
@@ -63,8 +64,7 @@ export function validateBundle(bundle: FhirBundle): readonly ValidationIssue[] {
   for (const [key, resource] of seen) {
     for (const referenceField of ["subject", "patient", "encounter"]) {
       const value = resource[referenceField] as
-        | { reference?: string }
-        | undefined;
+        { reference?: string } | undefined;
       const target = value?.reference;
       if (!target) continue;
       if (!seen.has(target))
@@ -79,21 +79,25 @@ export function validateBundle(bundle: FhirBundle): readonly ValidationIssue[] {
   const patient = [...seen.values()].find((r) => r.resourceType === "Patient");
   if (patient) {
     const identifier = patient["identifier"] as
-      | { value?: string }[]
-      | undefined;
+      { value?: string }[] | undefined;
     const value = identifier?.[0]?.value;
     if (typeof value !== "string" || !PATIENT_ID_PATTERN.test(value))
-      push("Patient.identifier[0].value", "patient identifier is missing or malformed");
+      push(
+        "Patient.identifier[0].value",
+        "patient identifier is missing or malformed",
+      );
   }
 
   // Observation shape: numeric value present.
   for (const [key, resource] of seen) {
     if (resource.resourceType !== "Observation") continue;
     const quantity = resource["valueQuantity"] as
-      | { value?: unknown; unit?: unknown }
-      | undefined;
+      { value?: unknown; unit?: unknown } | undefined;
     if (typeof quantity?.value !== "number")
-      push(`${key}.valueQuantity.value`, "observation must carry a numeric value");
+      push(
+        `${key}.valueQuantity.value`,
+        "observation must carry a numeric value",
+      );
     if (typeof quantity?.unit !== "string" || !quantity.unit)
       push(`${key}.valueQuantity.unit`, "observation must carry a unit");
   }

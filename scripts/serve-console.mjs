@@ -15,8 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../apps/console/public/", import.meta.url));
 const PORT = Number(process.env.CONSOLE_PORT ?? 5174);
-const API_TARGET =
-  process.env.CONSOLE_API_TARGET ?? "http://127.0.0.1:8080";
+const API_TARGET = process.env.CONSOLE_API_TARGET ?? "http://127.0.0.1:8080";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -34,7 +33,8 @@ function safePath(urlPath) {
   const joined = normalize(join(ROOT, target));
   // Containment without string-prefix pitfalls: the relative path must not escape.
   const rel = relative(ROOT, joined);
-  if (rel === "" || rel.startsWith("..") || rel.includes(`..${sep}`)) return null;
+  if (rel === "" || rel.startsWith("..") || rel.includes(`..${sep}`))
+    return null;
   return joined;
 }
 

@@ -45,7 +45,8 @@ export interface ExportPatient {
 
 export interface ExportEncounter {
   readonly id: string;
-  readonly status: "planned" | "triaged" | "in-progress" | "finished" | "cancelled";
+  readonly status:
+    "planned" | "triaged" | "in-progress" | "finished" | "cancelled";
   readonly startedAt: string;
   readonly endedAt: string | null;
   readonly chiefComplaintCodes: readonly string[];

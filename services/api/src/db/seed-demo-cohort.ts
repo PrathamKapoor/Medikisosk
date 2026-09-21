@@ -54,9 +54,21 @@ interface FactSet {
     origin: string;
     verified?: boolean;
   }[];
-  allergies: { code: string; name: string; reaction?: string; severity?: string }[];
+  allergies: {
+    code: string;
+    name: string;
+    reaction?: string;
+    severity?: string;
+  }[];
   vitals: { code: string; component?: string; value: number; unit: string }[];
-  labs: { code: string; value: number; unit: string; flag: string; low?: number; high?: number }[];
+  labs: {
+    code: string;
+    value: number;
+    unit: string;
+    flag: string;
+    low?: number;
+    high?: number;
+  }[];
   conditions: { code: string | null; display: string; kind: string }[];
   documents: number;
 }
@@ -455,7 +467,10 @@ async function insertTrail(
         eventType: "TRIAGE_ASSESSED",
         eventAt: trail.submittedAt,
         headline: `Triage assessed: ${assessment.level}`,
-        detailJson: json({ level: assessment.level, priority: assessment.priority }),
+        detailJson: json({
+          level: assessment.level,
+          priority: assessment.priority,
+        }),
         evidenceIdsJson: json([]),
         createdAt: trail.submittedAt,
       })
@@ -470,7 +485,10 @@ async function insertTrail(
         eventType: "ENCOUNTER_SUBMITTED",
         eventAt: trail.submittedAt,
         headline: "Encounter submitted for review",
-        detailJson: json({ level: assessment.level, priority: assessment.priority }),
+        detailJson: json({
+          level: assessment.level,
+          priority: assessment.priority,
+        }),
         evidenceIdsJson: json([]),
         createdAt: trail.submittedAt,
       })
@@ -524,7 +542,8 @@ async function insertTrail(
       patientId,
       encounterId,
       eventType: "COHORT_TRAIL",
-      eventAt: trail.completedAt ?? trail.submittedAt ?? new Date().toISOString(),
+      eventAt:
+        trail.completedAt ?? trail.submittedAt ?? new Date().toISOString(),
       headline: marker,
       detailJson: json({}),
       evidenceIdsJson: json([]),
@@ -616,7 +635,8 @@ async function seedSunitaDocument(
     .executeTakeFirst();
   if (present) return;
   const fixture = demoDocumentByName("lab-report-sunita-demo.txt");
-  if (!fixture) throw new Error("Sunita lab fixture is missing from DEMO_DOCUMENTS.");
+  if (!fixture)
+    throw new Error("Sunita lab fixture is missing from DEMO_DOCUMENTS.");
   const bytes = Buffer.from(fixture.bytes);
   const checksum = createHash("sha256").update(bytes).digest("hex");
   const storageName = `${checksum}.txt`;
@@ -775,11 +795,20 @@ export async function seedDemoCohort(
 
   const sunitaV1: FactSet = {
     symptoms: [
-      { code: "MK-SYM-054", display: "Excessive thirst", text: "bahut pyaas lagti hai" },
+      {
+        code: "MK-SYM-054",
+        display: "Excessive thirst",
+        text: "bahut pyaas lagti hai",
+      },
       { code: "MK-SYM-055", display: "Frequent urination" },
     ],
     medications: [
-      { code: "MK-MED-001", name: "Tab Metformin 500 mg BD", frequency: "BD", origin: "CLINICIAN_ENTERED" },
+      {
+        code: "MK-MED-001",
+        name: "Tab Metformin 500 mg BD",
+        frequency: "BD",
+        origin: "CLINICIAN_ENTERED",
+      },
     ],
     allergies: [],
     vitals: [
@@ -787,8 +816,21 @@ export async function seedDemoCohort(
       { code: "MK-VIT-008", value: 74, unit: "kg" },
     ],
     labs: [
-      { code: "MK-LAB-003", value: 8.2, unit: "%", flag: "HIGH", low: 4, high: 5.7 },
-      { code: "MK-LAB-004", value: 212, unit: "mg/dL", flag: "HIGH", high: 200 },
+      {
+        code: "MK-LAB-003",
+        value: 8.2,
+        unit: "%",
+        flag: "HIGH",
+        low: 4,
+        high: 5.7,
+      },
+      {
+        code: "MK-LAB-004",
+        value: 212,
+        unit: "mg/dL",
+        flag: "HIGH",
+        high: 200,
+      },
     ],
     conditions: [],
     documents: 0,
@@ -806,15 +848,35 @@ export async function seedDemoCohort(
     completedAt: "2025-06-10T09:55:00.000Z",
     disposition: "FOLLOW_UP_OPD",
   });
-  await insertFacts(db, tenantId, SUNITA, SUNITA_V1, "2025-06-10T09:05:00.000Z", sunitaV1, true);
-  await insertDiagnosis(db, tenantId, SUNITA, SUNITA_V1, {
-    displayText: "Type 2 diabetes mellitus",
-    icd10Code: "E11",
-    status: "CONFIRMED",
-  }, "2025-06-10T09:50:00.000Z");
-  await insertNote(db, tenantId, SUNITA_V1, "Dr. Rao",
+  await insertFacts(
+    db,
+    tenantId,
+    SUNITA,
+    SUNITA_V1,
+    "2025-06-10T09:05:00.000Z",
+    sunitaV1,
+    true,
+  );
+  await insertDiagnosis(
+    db,
+    tenantId,
+    SUNITA,
+    SUNITA_V1,
+    {
+      displayText: "Type 2 diabetes mellitus",
+      icd10Code: "E11",
+      status: "CONFIRMED",
+    },
+    "2025-06-10T09:50:00.000Z",
+  );
+  await insertNote(
+    db,
+    tenantId,
+    SUNITA_V1,
+    "Dr. Rao",
     "New diagnosis of type 2 diabetes. Started metformin 500 mg twice daily with diet counselling. Review HbA1c in three months.",
-    "2025-06-10T09:52:00.000Z");
+    "2025-06-10T09:52:00.000Z",
+  );
   await insertTrail(db, tenantId, SUNITA, SUNITA_V1, sunitaV1, {
     submittedAt: "2025-06-10T09:22:00.000Z",
     completedAt: "2025-06-10T09:55:00.000Z",
@@ -824,10 +886,22 @@ export async function seedDemoCohort(
   });
 
   const sunitaV2: FactSet = {
-    symptoms: [{ code: "MK-SYM-022", display: "Fatigue or weakness", severity: "MILD" }],
+    symptoms: [
+      { code: "MK-SYM-022", display: "Fatigue or weakness", severity: "MILD" },
+    ],
     medications: [
-      { code: "MK-MED-001", name: "Tab Metformin 500 mg BD", frequency: "BD", origin: "CLINICIAN_ENTERED" },
-      { code: "MK-MED-011", name: "Tab Atorvastatin 10 mg HS", frequency: "HS", origin: "CLINICIAN_ENTERED" },
+      {
+        code: "MK-MED-001",
+        name: "Tab Metformin 500 mg BD",
+        frequency: "BD",
+        origin: "CLINICIAN_ENTERED",
+      },
+      {
+        code: "MK-MED-011",
+        name: "Tab Atorvastatin 10 mg HS",
+        frequency: "HS",
+        origin: "CLINICIAN_ENTERED",
+      },
     ],
     allergies: [],
     vitals: [
@@ -835,10 +909,29 @@ export async function seedDemoCohort(
       { code: "MK-VIT-008", value: 71, unit: "kg" },
     ],
     labs: [
-      { code: "MK-LAB-003", value: 5.6, unit: "%", flag: "NORMAL", low: 4, high: 5.7 },
-      { code: "MK-LAB-004", value: 178, unit: "mg/dL", flag: "NORMAL", high: 200 },
+      {
+        code: "MK-LAB-003",
+        value: 5.6,
+        unit: "%",
+        flag: "NORMAL",
+        low: 4,
+        high: 5.7,
+      },
+      {
+        code: "MK-LAB-004",
+        value: 178,
+        unit: "mg/dL",
+        flag: "NORMAL",
+        high: 200,
+      },
     ],
-    conditions: [{ code: "MK-CON-001", display: "Type 2 diabetes mellitus", kind: "CONDITION" }],
+    conditions: [
+      {
+        code: "MK-CON-001",
+        display: "Type 2 diabetes mellitus",
+        kind: "CONDITION",
+      },
+    ],
     documents: 0,
   };
   await insertEncounter(db, tenantId, {
@@ -854,10 +947,23 @@ export async function seedDemoCohort(
     completedAt: "2025-12-08T10:40:00.000Z",
     disposition: "FOLLOW_UP_OPD",
   });
-  await insertFacts(db, tenantId, SUNITA, SUNITA_V2, "2025-12-08T10:05:00.000Z", sunitaV2, true);
-  await insertNote(db, tenantId, SUNITA_V2, "Dr. Rao",
+  await insertFacts(
+    db,
+    tenantId,
+    SUNITA,
+    SUNITA_V2,
+    "2025-12-08T10:05:00.000Z",
+    sunitaV2,
+    true,
+  );
+  await insertNote(
+    db,
+    tenantId,
+    SUNITA_V2,
+    "Dr. Rao",
     "HbA1c at goal on metformin. Added atorvastatin for lipids. Continue current plan, annual eye and foot review.",
-    "2025-12-08T10:38:00.000Z");
+    "2025-12-08T10:38:00.000Z",
+  );
   await insertTrail(db, tenantId, SUNITA, SUNITA_V2, sunitaV2, {
     submittedAt: "2025-12-08T10:18:00.000Z",
     completedAt: "2025-12-08T10:40:00.000Z",
@@ -867,10 +973,22 @@ export async function seedDemoCohort(
   });
 
   const sunitaV3: FactSet = {
-    symptoms: [{ code: "MK-SYM-022", display: "Fatigue or weakness", severity: "MILD" }],
+    symptoms: [
+      { code: "MK-SYM-022", display: "Fatigue or weakness", severity: "MILD" },
+    ],
     medications: [
-      { code: "MK-MED-001", name: "Tab Metformin 500 mg BD", frequency: "BD", origin: "PATIENT_REPORTED" },
-      { code: "MK-MED-011", name: "Tab Atorvastatin 10 mg HS", frequency: "HS", origin: "PATIENT_REPORTED" },
+      {
+        code: "MK-MED-001",
+        name: "Tab Metformin 500 mg BD",
+        frequency: "BD",
+        origin: "PATIENT_REPORTED",
+      },
+      {
+        code: "MK-MED-011",
+        name: "Tab Atorvastatin 10 mg HS",
+        frequency: "HS",
+        origin: "PATIENT_REPORTED",
+      },
     ],
     allergies: [],
     vitals: [
@@ -878,7 +996,13 @@ export async function seedDemoCohort(
       { code: "MK-VIT-004", value: 97, unit: "%" },
     ],
     labs: [],
-    conditions: [{ code: "MK-CON-001", display: "Type 2 diabetes mellitus", kind: "CONDITION" }],
+    conditions: [
+      {
+        code: "MK-CON-001",
+        display: "Type 2 diabetes mellitus",
+        kind: "CONDITION",
+      },
+    ],
     documents: 1,
   };
   await insertEncounter(db, tenantId, {
@@ -894,17 +1018,41 @@ export async function seedDemoCohort(
     completedAt: null,
     disposition: null,
   });
-  await insertFacts(db, tenantId, SUNITA, SUNITA_V3, "2026-09-17T10:05:00.000Z", sunitaV3, false);
+  await insertFacts(
+    db,
+    tenantId,
+    SUNITA,
+    SUNITA_V3,
+    "2026-09-17T10:05:00.000Z",
+    sunitaV3,
+    false,
+  );
   await seedSunitaDocument(db, tenantId, config);
-  await insertTrail(db, tenantId, SUNITA, SUNITA_V3, {
-    ...sunitaV3,
-    labs: [{ code: "MK-LAB-003", value: 5.9, unit: "%", flag: "HIGH", low: 4, high: 5.7 }],
-  }, {
-    submittedAt: "2026-09-17T10:20:00.000Z",
-    completedAt: null,
-    token: "A-004",
-    queueStatus: "WAITING",
-  });
+  await insertTrail(
+    db,
+    tenantId,
+    SUNITA,
+    SUNITA_V3,
+    {
+      ...sunitaV3,
+      labs: [
+        {
+          code: "MK-LAB-003",
+          value: 5.9,
+          unit: "%",
+          flag: "HIGH",
+          low: 4,
+          high: 5.7,
+        },
+      ],
+    },
+    {
+      submittedAt: "2026-09-17T10:20:00.000Z",
+      completedAt: null,
+      token: "A-004",
+      queueStatus: "WAITING",
+    },
+  );
 
   // --- Aarav Patel: fever with cough ------------------------------------------------
   await insertPatient(db, tenantId, {
@@ -919,12 +1067,28 @@ export async function seedDemoCohort(
   });
   const aaravFacts: FactSet = {
     symptoms: [
-      { code: "MK-SYM-020", display: "Fever", severity: "MODERATE", durationDays: 3, text: "three days fever" },
-      { code: "MK-SYM-007", display: "Cough", severity: "MILD", durationDays: 3 },
+      {
+        code: "MK-SYM-020",
+        display: "Fever",
+        severity: "MODERATE",
+        durationDays: 3,
+        text: "three days fever",
+      },
+      {
+        code: "MK-SYM-007",
+        display: "Cough",
+        severity: "MILD",
+        durationDays: 3,
+      },
       { code: "MK-SYM-010", display: "Sore throat", severity: "MILD" },
     ],
     medications: [
-      { code: "MK-MED-017", name: "Paracetamol 650 mg", frequency: "SOS", origin: "PATIENT_REPORTED" },
+      {
+        code: "MK-MED-017",
+        name: "Paracetamol 650 mg",
+        frequency: "SOS",
+        origin: "PATIENT_REPORTED",
+      },
     ],
     allergies: [],
     vitals: [
@@ -951,7 +1115,15 @@ export async function seedDemoCohort(
     completedAt: null,
     disposition: null,
   });
-  await insertFacts(db, tenantId, AARAV, AARAV_VISIT, "2026-09-17T09:32:00.000Z", aaravFacts, false);
+  await insertFacts(
+    db,
+    tenantId,
+    AARAV,
+    AARAV_VISIT,
+    "2026-09-17T09:32:00.000Z",
+    aaravFacts,
+    false,
+  );
   await insertTrail(db, tenantId, AARAV, AARAV_VISIT, aaravFacts, {
     submittedAt: "2026-09-17T09:48:00.000Z",
     completedAt: null,
@@ -972,12 +1144,22 @@ export async function seedDemoCohort(
   });
   const meenaFacts: FactSet = {
     symptoms: [
-      { code: "MK-SYM-040", display: "Abdominal pain", severity: "MODERATE", durationDays: 2 },
+      {
+        code: "MK-SYM-040",
+        display: "Abdominal pain",
+        severity: "MODERATE",
+        durationDays: 2,
+      },
       { code: "MK-SYM-041", display: "Vomiting", severity: "MILD" },
     ],
     medications: [],
     allergies: [
-      { code: "MK-ALG-001", name: "Penicillin", reaction: "rash", severity: "MODERATE" },
+      {
+        code: "MK-ALG-001",
+        name: "Penicillin",
+        reaction: "rash",
+        severity: "MODERATE",
+      },
     ],
     vitals: [
       { code: "MK-VIT-001", component: "SYSTOLIC", value: 142, unit: "mmHg" },
@@ -985,7 +1167,9 @@ export async function seedDemoCohort(
       { code: "MK-VIT-002", value: 88, unit: "beats/min" },
     ],
     labs: [],
-    conditions: [{ code: "MK-CON-003", display: "Hypertension", kind: "CONDITION" }],
+    conditions: [
+      { code: "MK-CON-003", display: "Hypertension", kind: "CONDITION" },
+    ],
     documents: 0,
   };
   await insertEncounter(db, tenantId, {
@@ -1001,7 +1185,15 @@ export async function seedDemoCohort(
     completedAt: null,
     disposition: null,
   });
-  await insertFacts(db, tenantId, MEENA, MEENA_VISIT, "2026-09-17T09:07:00.000Z", meenaFacts, false);
+  await insertFacts(
+    db,
+    tenantId,
+    MEENA,
+    MEENA_VISIT,
+    "2026-09-17T09:07:00.000Z",
+    meenaFacts,
+    false,
+  );
   await insertTrail(db, tenantId, MEENA, MEENA_VISIT, meenaFacts, {
     submittedAt: "2026-09-17T09:27:00.000Z",
     completedAt: null,
@@ -1022,10 +1214,20 @@ export async function seedDemoCohort(
   });
   const josephFacts: FactSet = {
     symptoms: [
-      { code: "MK-SYM-062", display: "Back pain", severity: "SEVERE", text: "fell from a ladder at work" },
+      {
+        code: "MK-SYM-062",
+        display: "Back pain",
+        severity: "SEVERE",
+        text: "fell from a ladder at work",
+      },
     ],
     medications: [
-      { code: "MK-MED-018", name: "Ibuprofen 400 mg", frequency: "SOS", origin: "PATIENT_REPORTED" },
+      {
+        code: "MK-MED-018",
+        name: "Ibuprofen 400 mg",
+        frequency: "SOS",
+        origin: "PATIENT_REPORTED",
+      },
     ],
     allergies: [],
     vitals: [
@@ -1049,7 +1251,15 @@ export async function seedDemoCohort(
     completedAt: null,
     disposition: null,
   });
-  await insertFacts(db, tenantId, JOSEPH, JOSEPH_VISIT, "2026-09-17T08:42:00.000Z", josephFacts, false);
+  await insertFacts(
+    db,
+    tenantId,
+    JOSEPH,
+    JOSEPH_VISIT,
+    "2026-09-17T08:42:00.000Z",
+    josephFacts,
+    false,
+  );
   await insertTrail(db, tenantId, JOSEPH, JOSEPH_VISIT, josephFacts, {
     submittedAt: "2026-09-17T08:55:00.000Z",
     completedAt: null,
@@ -1070,7 +1280,14 @@ export async function seedDemoCohort(
     preferredLanguage: "hi-IN",
   });
   const fatimaFacts: FactSet = {
-    symptoms: [{ code: "MK-SYM-030", display: "Headache", severity: "MILD", durationDays: 1 }],
+    symptoms: [
+      {
+        code: "MK-SYM-030",
+        display: "Headache",
+        severity: "MILD",
+        durationDays: 1,
+      },
+    ],
     medications: [],
     allergies: [],
     vitals: [
@@ -1095,7 +1312,15 @@ export async function seedDemoCohort(
     completedAt: "2026-09-16T11:40:00.000Z",
     disposition: "DISCHARGE_HOME",
   });
-  await insertFacts(db, tenantId, FATIMA, FATIMA_VISIT, "2026-09-16T11:02:00.000Z", fatimaFacts, true);
+  await insertFacts(
+    db,
+    tenantId,
+    FATIMA,
+    FATIMA_VISIT,
+    "2026-09-16T11:02:00.000Z",
+    fatimaFacts,
+    true,
+  );
   await insertTrail(db, tenantId, FATIMA, FATIMA_VISIT, fatimaFacts, {
     submittedAt: "2026-09-16T11:15:00.000Z",
     completedAt: "2026-09-16T11:40:00.000Z",

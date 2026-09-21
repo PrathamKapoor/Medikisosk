@@ -42,7 +42,7 @@ type Mutate = (
 ) => Promise<{ status: number; json: () => unknown }>;
 
 async function kioskSession(): Promise<{
-  session: Record<string, string>;
+  session: { sessionId: string; token: string };
   mutate: Mutate;
   patientId: string;
   encounterId: string;
@@ -65,7 +65,7 @@ async function kioskSession(): Promise<{
     payload: { locale: "en-IN" },
   });
   expect(opened.statusCode).toBe(201);
-  const session = opened.json() as Record<string, string>;
+  const session = opened.json() as { sessionId: string; token: string };
   const mutate: Mutate = (url, payload, key = randomUUID(), method = "POST") =>
     fixture.app
       .inject({
@@ -183,7 +183,9 @@ describe("document pipeline", () => {
     expect(listed.status).toBe(200);
     const documents = listed.json() as { name: string; documentType: string }[];
     expect(documents.map((d) => d.name)).toContain("prescription-demo.txt");
-    expect(documents.map((d) => d.name)).toContain("lab-report-sunita-demo.txt");
+    expect(documents.map((d) => d.name)).toContain(
+      "lab-report-sunita-demo.txt",
+    );
     expect(documents.length).toBe(6);
   });
 
