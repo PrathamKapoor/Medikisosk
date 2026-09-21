@@ -32,5 +32,17 @@ describe("capabilitiesFor", () => {
       offline_enabled: false,
       research_mode_enabled: false,
     });
+  it("reports the mock OCR pipeline as MOCKED, never as a real integration", () => {
+    const capabilities = capabilitiesFor(configWith({ OCR_PROVIDER: "mock" }));
+    expect(capabilities.providers.ocr).toMatchObject({
+      provider: "mock",
+      isMock: true,
+      status: "MOCKED",
+    });
+    expect(
+      capabilities.limitations.some((line: string) =>
+        line.includes("deterministic mock"),
+      ),
+    ).toBe(true);
   });
 });

@@ -308,6 +308,27 @@ mock provider or from manual entry, and must be labelled as such.
 
 ---
 
+## 13. SIH prototype pass — console, documents, summaries, cohort (2026-09-21)
+
+| Capability | Status |
+|---|---|
+| Kiosk structured intake (vitals/history/medications/allergies), review assembly, explicit patient-confirmation gate, queue tokens | `IMPLEMENTED` (API + kiosk UI + tests; vitals validated against `VITAL_DEFINITIONS`, units converted, implausible readings rejected) |
+| Document pipeline (upload → validate → mock-OCR extract → entities → patient confirm → fact rows) | `IMPLEMENTED` with OCR `MOCKED` (deterministic hash-addressed provider; only registered synthetic fixtures recognised; labelled "Demo extraction" in UI and API) |
+| Clinician verification (verify/reject/edit with superseding evidence) | `IMPLEMENTED` (API + console UI + tests) |
+| Doctor console (queue, case, evidence, notes, diagnoses, disposition, completion) | `IMPLEMENTED` as vanilla HTML/CSS/JS (no build step; correctness via API + E2E tests) |
+| Admin console (overview, fleet, audit, health) | `IMPLEMENTED` (aggregates only; ADMIN has no clinical read permission) |
+| Deterministic 12-section clinical summaries | `IMPLEMENTED` (no LLM; drafts, unverified until attested) |
+| FHIR R4 bundle export | `IMPLEMENTED` as a demo representation (self-validated, meta-tagged, persisted; no HIE endpoint connected) |
+| Synthetic cohort (6 patients, longitudinal diabetes story, urgent hypoxia case) | `IMPLEMENTED` (seed; triage rows produced by the real engine) |
+| ABDM/ABHA, HIS/EMR sync, offline queue, AI synthesis, evaluation harness | `PLANNED` or `BLOCKED — credentials/environment` (unchanged) |
+| Postgres dialect, containers, TLS, monitoring | `PLANNED` — SQLite is the executed path |
+| Clinical validation, DPDPA/legal review, penetration testing | `NOT ESTABLISHED` (unchanged) |
+
+Supersedes §12 row 3: the evidence spine now covers `PATIENT_REPORTED` and
+`DOCUMENT_DERIVED` (plus `CLINICIAN_ENTERED` authorship); `AI_DERIVED` remains `PLANNED`.
+
+---
+
 ## 12. Phase 3 — interview runtime status (2026-09-18)
 
 | Capability | Status |

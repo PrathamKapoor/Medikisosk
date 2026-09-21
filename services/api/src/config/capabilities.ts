@@ -25,7 +25,14 @@ export function capabilitiesFor(config: AppConfig) {
         config.TTS_PROVIDER === "browser"
           ? { provider: "browser", isMock: false, status: "IMPLEMENTED" }
           : planned(config.TTS_PROVIDER),
-      ocr: planned(config.OCR_PROVIDER),
+      ocr:
+        config.OCR_PROVIDER === "mock"
+          ? {
+              provider: "mock",
+              isMock: true,
+              status: "MOCKED",
+            }
+          : planned(config.OCR_PROVIDER),
       ner:
         config.NER_PROVIDER === "deterministic"
           ? {
@@ -50,8 +57,8 @@ export function capabilitiesFor(config: AppConfig) {
     limitations: [
       "Identity verification is synthetic demonstration only, not ABHA or real patient matching.",
       "Browser speech recognition (ASR) and TTS are implemented client-side; they depend on the browser, OS speech packs and the microphone, are NOT validated for Indian languages, and always fall back to touch.",
-      "Document extraction, AI summaries and external ABDM workflows are not implemented.",
-      "Deterministic concept matching and safety rules exist as domain libraries, not clinical workflow endpoints.",
+      "Document extraction is a deterministic mock: only registered synthetic files are recognised, everything else extracts to an explicit empty result. Clinical summaries are deterministic drafts, never LLM output. External ABDM workflows are not implemented.",
+      "Deterministic concept matching and safety rules are domain libraries wired into the clinical workflow endpoints.",
       "The red-flag rule set is a curated starter set and has not been prospectively clinically validated.",
       "Non-English translations are machine-drafted and require native clinical review.",
       "DPDPA compliance is NOT ESTABLISHED; no legal review has occurred.",
