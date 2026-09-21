@@ -207,6 +207,7 @@ export default function App() {
 
   function clearPatient(
     reason: "registration.cleared" | "registration.expired",
+    opts?: { silent?: boolean },
   ) {
     const old = liveSession.current;
     const epoch = ++generation.current;
@@ -225,7 +226,10 @@ export default function App() {
     setBusy(false);
     setError(null);
     setWarning(false);
-    setNotice(reason);
+    // A reset notice is only meaningful when a live session actually ended unexpectedly.
+    // Explicit finishes/resets (silent) return to a clean welcome so the next arrival never
+    // sees a "session ended" message that is not theirs.
+    if (!opts?.silent && old) setNotice(reason);
     activity.current = Date.now();
     if (old) {
       const cleanup = new KioskApi();
@@ -354,6 +358,9 @@ export default function App() {
   const start = () =>
     void run(async (current) => {
       if (!device) return;
+      // A new arrival pressing Begin must never stare at the previous session's
+      // notice while the request is in flight.
+      setNotice(null);
       const wording = version ?? (await loadVersion(locale));
       if (!current()) return;
       const opened = await api.current.request<Session>("/kiosk/sessions", {
@@ -601,7 +608,9 @@ export default function App() {
               {session ? (
                 <button
                   className="text-button"
-                  onClick={() => clearPatient("registration.cleared")}
+                  onClick={() =>
+                    clearPatient("registration.cleared", { silent: true })
+                  }
                 >
                   {t("registration.clear")}
                 </button>
@@ -622,7 +631,10 @@ export default function App() {
             ) : null}
             {notice ? (
               <div className="notice" role="status">
-                {t(notice)}
+                <p>{t(notice)}</p>
+                <button className="text-button" onClick={() => setNotice(null)}>
+                  {t("common.close")}
+                </button>
               </div>
             ) : null}
             {error ? (
@@ -796,7 +808,11 @@ export default function App() {
                       {t("consent.revoke")}
                     </button>
                   ) : null}
-                  <button onClick={() => clearPatient("registration.cleared")}>
+                  <button
+                    onClick={() =>
+                      clearPatient("registration.cleared", { silent: true })
+                    }
+                  >
                     {t("registration.finish")}
                   </button>
                 </div>
@@ -844,7 +860,9 @@ export default function App() {
               <ResultScreen
                 result={submitResult}
                 t={t}
-                onFinish={() => clearPatient("registration.cleared")}
+                onFinish={() =>
+                  clearPatient("registration.cleared", { silent: true })
+                }
               />
             ) : null}
           </main>
@@ -879,7 +897,11 @@ export default function App() {
           >
             {t("registration.stay")}
           </button>
-          <button onClick={() => clearPatient("registration.cleared")}>
+          <button
+            onClick={() =>
+              clearPatient("registration.cleared", { silent: true })
+            }
+          >
             {t("registration.clear")}
           </button>
         </div>
