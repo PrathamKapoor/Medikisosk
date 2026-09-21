@@ -82,6 +82,8 @@ const en = {
     "Connection appears offline. No offline registration is available. Your current choices stay on this screen only until it clears.",
   "registration.error":
     "The request could not be completed. Check the connection and retry. Your current choices have not been cleared.",
+  "registration.device_rejected":
+    "This kiosk's credentials were rejected. Check the kiosk ID and device token with staff, then try again.",
   "registration.otp_error":
     "That demonstration code was not accepted. Use 123456, or choose another method if the code expired.",
   "registration.unavailable_error":
@@ -169,6 +171,8 @@ const hi: RegistrationCatalogue = {
     "कनेक्शन बंद लगता है। ऑफलाइन पंजीकरण उपलब्ध नहीं है। स्क्रीन साफ होने तक आपके विकल्प केवल इसी स्क्रीन पर रहेंगे।",
   "registration.error":
     "अनुरोध पूरा नहीं हो सका। कनेक्शन जांचकर फिर प्रयास करें। आपके वर्तमान विकल्प साफ नहीं किए गए हैं।",
+  "registration.device_rejected":
+    "इस कियोस्क की जानकारी स्वीकार नहीं हुई। कियोस्क ID और डिवाइस टोकन स्टाफ से जांचकर फिर कोशिश करें।",
   "registration.otp_error":
     "यह प्रदर्शन कोड स्वीकार नहीं हुआ। 123456 डालें या कोड समाप्त होने पर दूसरा तरीका चुनें।",
   "registration.unavailable_error":
@@ -254,6 +258,8 @@ const mr: RegistrationCatalogue = {
     "कनेक्शन बंद वाटते. ऑफलाइन नोंदणी उपलब्ध नाही. स्क्रीन साफ होईपर्यंत तुमचे पर्याय फक्त याच स्क्रीनवर राहतील.",
   "registration.error":
     "विनंती पूर्ण झाली नाही. कनेक्शन तपासून पुन्हा प्रयत्न करा. तुमचे सध्याचे पर्याय साफ केलेले नाहीत.",
+  "registration.device_rejected":
+    "या कियोस्कची माहिती स्वीकारली गेली नाही. कियोस्क ID आणि डिवाइस टोकन कर्मचाऱ्यांकडून तपासून पुन्हा प्रयत्न करा.",
   "registration.otp_error":
     "हा प्रात्यक्षिक कोड स्वीकारला नाही. 123456 भरा किंवा मुदत संपल्यास दुसरी पद्धत निवडा.",
   "registration.unavailable_error":

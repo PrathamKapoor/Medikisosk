@@ -119,7 +119,7 @@ function Provisioning({ onReady }: { onReady: (device: Device) => void }) {
         autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
-          onReady({ id: id.trim(), token });
+          onReady({ id: id.trim(), token: token.trim() });
           setId("");
           setToken("");
         }}
@@ -355,37 +355,57 @@ export default function App() {
       );
     });
 
+  const startSession = async (current: () => boolean) => {
+    if (!device) return;
+    const wording = version ?? (await loadVersion(locale));
+    if (!current()) return;
+    const opened = await api.current.request<Session>("/kiosk/sessions", {
+      method: "POST",
+      body: { locale },
+      device,
+    });
+    if (!current()) return;
+    ++generation.current;
+    liveSession.current = opened;
+    setSession(opened);
+    setVersion(wording);
+    setDecisions(
+      wording.purposes.map((purpose) => ({
+        purpose: purpose.key,
+        granted: false,
+        categories: [],
+      })),
+    );
+    setScreen("identity");
+    setNotice(null);
+    activity.current = Date.now();
+    setNow(Date.now());
+    locked.current = false;
+    setBusy(false);
+  };
+
   const start = () =>
     void run(async (current) => {
       if (!device) return;
       // A new arrival pressing Begin must never stare at the previous session's
       // notice while the request is in flight.
       setNotice(null);
-      const wording = version ?? (await loadVersion(locale));
-      if (!current()) return;
-      const opened = await api.current.request<Session>("/kiosk/sessions", {
-        method: "POST",
-        body: { locale },
-        device,
-      });
-      if (!current()) return;
-      ++generation.current;
-      liveSession.current = opened;
-      setSession(opened);
-      setVersion(wording);
-      setDecisions(
-        wording.purposes.map((purpose) => ({
-          purpose: purpose.key,
-          granted: false,
-          categories: [],
-        })),
-      );
-      setScreen("identity");
-      setNotice(null);
-      activity.current = Date.now();
-      setNow(Date.now());
-      locked.current = false;
-      setBusy(false);
+      try {
+        await startSession(current);
+      } catch (cause) {
+        // Rejected device credentials before any session existed are a provisioning
+        // problem, not an expired patient session: say so plainly and stay put.
+        if (
+          cause instanceof ApiError &&
+          cause.status === 401 &&
+          !liveSession.current &&
+          current()
+        ) {
+          setError("registration.device_rejected");
+          return;
+        }
+        throw cause;
+      }
     });
 
   const chooseIdentity = (
